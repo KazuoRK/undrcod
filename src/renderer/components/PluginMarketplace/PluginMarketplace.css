@@ -1,0 +1,960 @@
+/*
+ * PluginMarketplace — modal pra navegar/instalar plugins do Claude Code.
+ *
+ * Layout: backdrop centralizado + header sticky (search + filters) +
+ * body com sidebar de marketplaces + grid de cards.
+ *
+ * Reutiliza tokens do design system: --bg-*, --fg-*, --accent, --border-*.
+ */
+
+.plugin-mkt-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  animation: pluginMktBackdropIn var(--duration-fast) var(--ease-out-expo);
+}
+
+@keyframes pluginMktBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.plugin-mkt-modal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  width: min(1100px, 90vw);
+  height: min(80vh, 800px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: pluginMktModalIn var(--duration-base) var(--ease-out-expo);
+  /* Container query pra responsivo (1-col em modal pequeno) */
+  container-type: inline-size;
+  container-name: plugin-mkt;
+}
+
+@keyframes pluginMktModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================================
+   Header (sticky top)
+   ============================================================ */
+.plugin-mkt-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 14px 18px 12px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-panel);
+}
+
+.plugin-mkt-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plugin-mkt-title {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--fg-primary);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.plugin-mkt-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.plugin-mkt-close:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+/* ============================================================
+   Search + filters row
+   ============================================================ */
+.plugin-mkt-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plugin-mkt-search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.plugin-mkt-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--fg-muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.plugin-mkt-search-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 7px 32px 7px 32px;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--fg-primary);
+  transition: border-color var(--duration-fast) var(--ease-out-expo),
+              box-shadow var(--duration-fast) var(--ease-out-expo);
+}
+
+.plugin-mkt-search-input::placeholder {
+  color: var(--fg-muted);
+}
+
+.plugin-mkt-search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.plugin-mkt-search-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+  font-size: 12px;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.plugin-mkt-search-clear:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.plugin-mkt-select {
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--fg-primary);
+  cursor: pointer;
+  max-width: 180px;
+  transition: border-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.plugin-mkt-select:hover {
+  border-color: var(--accent);
+}
+
+.plugin-mkt-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.plugin-mkt-icon-btn {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-secondary);
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+.plugin-mkt-icon-btn:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+  border-color: var(--accent);
+}
+.plugin-mkt-icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.plugin-mkt-icon-btn .is-spinning {
+  animation: pluginMktSpin 0.8s linear infinite;
+}
+
+@keyframes pluginMktSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   Body — sidebar + content
+   ============================================================ */
+.plugin-mkt-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.plugin-mkt-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-subtle);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg-base);
+  overflow-y: auto;
+}
+
+.plugin-mkt-sidebar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plugin-mkt-sidebar-group-label {
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 12px 6px 12px;
+}
+
+.plugin-mkt-sidebar-empty {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  font-style: italic;
+  padding: 6px 12px;
+}
+
+.plugin-mkt-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--fg-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  text-align: left;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.plugin-mkt-sidebar-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.plugin-mkt-sidebar-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plugin-mkt-sidebar-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  background: var(--bg-elevated);
+  padding: 1px 6px;
+  border-radius: var(--radius-lg);
+  flex-shrink: 0;
+}
+
+.plugin-mkt-sidebar-item:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.plugin-mkt-sidebar-item.is-active {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+  font-weight: 500;
+}
+
+.plugin-mkt-sidebar-item.is-active .plugin-mkt-sidebar-count {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--fg-primary);
+}
+
+/* ============================================================
+   Content area
+   ============================================================ */
+.plugin-mkt-content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.plugin-mkt-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 20px;
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+}
+
+.plugin-mkt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.plugin-mkt-empty-icon {
+  font-size: 36px;
+  color: var(--fg-muted);
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+
+.plugin-mkt-empty-title {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--fg-primary);
+}
+
+.plugin-mkt-empty-msg {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+  max-width: 360px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   Grid of plugin cards
+   ============================================================ */
+.plugin-mkt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* Container query: 1-col em modal estreito */
+@container plugin-mkt (max-width: 700px) {
+  .plugin-mkt-grid {
+    grid-template-columns: 1fr;
+  }
+  .plugin-mkt-sidebar {
+    width: 200px;
+  }
+}
+
+/* ============================================================
+   Plugin card
+   ============================================================ */
+.plugin-mkt-card {
+  position: relative;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  grid-template-areas: "icon body actions";
+  gap: 12px;
+  align-items: start;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo),
+              box-shadow var(--duration-fast) var(--ease-out-expo),
+              background var(--duration-fast) var(--ease-out-expo);
+}
+
+.plugin-mkt-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border-subtle));
+  background: color-mix(in srgb, var(--bg-elevated) 92%, var(--accent) 8%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.plugin-mkt-card.is-expanded {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--bg-elevated) 88%, var(--accent) 12%);
+}
+
+.plugin-mkt-card.is-installed {
+  border-left-width: 3px;
+  border-left-color: var(--accent);
+}
+
+.plugin-mkt-card.is-disabled {
+  opacity: 0.65;
+}
+
+.plugin-mkt-card-icon {
+  grid-area: icon;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-size: 18px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* img de logo real (simple-icons CDN / github avatar). Logos do
+ * simple-icons são SVGs monocromaticos pretos por default; como tao
+ * em background escuro, invertemos pra branco-ish. */
+.plugin-mkt-logo-img {
+  width: 60%;
+  height: 60%;
+  object-fit: contain;
+  display: block;
+  filter: invert(0.9) opacity(0.92);
+}
+
+/* GitHub avatars (raster PNG, coloridos) não devem ser invertidos.
+ * Detect via attribute selector e ocupa box inteira como avatar. */
+.plugin-mkt-logo-img[src*="github.com"][src$="80"],
+.plugin-mkt-logo-img[src*="githubusercontent.com"] {
+  filter: none;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.plugin-mkt-card-body {
+  grid-area: body;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plugin-mkt-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.plugin-mkt-card-name {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.plugin-mkt-card-version {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  background: var(--bg-input);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.plugin-mkt-card-badge {
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  background: var(--bg-input);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+
+.plugin-mkt-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+.plugin-mkt-card-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.plugin-mkt-card-author .codicon {
+  font-size: 11px;
+}
+
+.plugin-mkt-card-category {
+  text-transform: capitalize;
+}
+
+.plugin-mkt-card-description {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--fg-secondary);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.plugin-mkt-card-description.is-full {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+.plugin-mkt-card-expanded {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.plugin-mkt-card-link {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: filter var(--duration-fast) var(--ease-out-expo);
+}
+
+.plugin-mkt-card-link:hover {
+  filter: brightness(1.15);
+  text-decoration: underline;
+}
+
+.plugin-mkt-card-link .codicon {
+  font-size: 12px;
+}
+
+/* ---- Installs chip no meta (número real de downloads do CLI) ---- */
+.plugin-mkt-card-installs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--fg-faint, rgba(255, 255, 255, 0.45));
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  cursor: help;
+}
+
+.plugin-mkt-card-installs .codicon {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* ---- Inventario do plugin (visível quando expand + isInstalled) ---- */
+.plugin-mkt-inventory {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--bg-default, #000) 60%, transparent);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  border-radius: var(--radius-lg);
+}
+
+.plugin-mkt-inventory-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-faint, rgba(255, 255, 255, 0.4));
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.plugin-mkt-inventory-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.plugin-mkt-component-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 6px;
+  background: color-mix(in srgb, var(--accent, #d4af37) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent, #d4af37) 20%, transparent);
+  border-radius: var(--radius-2xl);
+  font-size: 11.5px;
+  color: var(--fg-default, rgba(255, 255, 255, 0.85));
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-mkt-component-chip .codicon {
+  font-size: 11px;
+  color: var(--accent, #d4af37);
+  flex-shrink: 0;
+}
+
+.plugin-mkt-component-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plugin-mkt-inventory-footer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-subtle, rgba(255, 255, 255, 0.06));
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--fg-faint, rgba(255, 255, 255, 0.45));
+}
+
+.plugin-mkt-inventory-footer .codicon {
+  font-size: 11px;
+}
+
+.plugin-mkt-inventory-loading,
+.plugin-mkt-inventory-error,
+.plugin-mkt-inventory-empty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--fg-muted, rgba(255, 255, 255, 0.55));
+  padding: 4px 0;
+}
+
+.plugin-mkt-inventory-error {
+  color: var(--danger, #c0464a);
+}
+
+.plugin-mkt-card-feedback {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.plugin-mkt-card-feedback .codicon {
+  font-size: 12px;
+}
+
+.plugin-mkt-card-feedback.is-success {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.plugin-mkt-card-feedback.is-error {
+  color: #ff8080;
+  background: color-mix(in srgb, #ff5050 14%, transparent);
+}
+
+/* ============================================================
+   Card actions (install / configure)
+   ============================================================ */
+.plugin-mkt-card-actions {
+  grid-area: actions;
+  align-self: center;
+  position: relative;
+}
+
+.plugin-mkt-card-action-wrap {
+  position: relative;
+}
+
+.plugin-mkt-card-action {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-secondary);
+  font-size: 18px;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.plugin-mkt-card-action-install:hover {
+  background: var(--accent);
+  color: var(--bg-base);
+  border-color: var(--accent);
+}
+
+.plugin-mkt-card-action-installed {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border-strong));
+}
+
+.plugin-mkt-card-action-installed:hover {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.plugin-mkt-card-spinner {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-size: 18px;
+}
+
+/* Spin animation pra codicon-loading */
+.codicon-modifier-spin {
+  animation: pluginMktSpin 1s linear infinite;
+}
+
+/* ============================================================
+   Card action menu (Desabilitar / Atualizar / Remover)
+   ============================================================ */
+.plugin-mkt-card-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  min-width: 160px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  animation: pluginMktMenuIn var(--duration-fast) var(--ease-out-expo);
+}
+
+@keyframes pluginMktMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.plugin-mkt-card-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--fg-secondary);
+  text-align: left;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.plugin-mkt-card-menu-item .codicon {
+  font-size: 13px;
+}
+
+.plugin-mkt-card-menu-item:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.plugin-mkt-card-menu-item.is-danger {
+  color: #ff8080;
+}
+
+.plugin-mkt-card-menu-item.is-danger:hover {
+  background: color-mix(in srgb, #ff5050 18%, transparent);
+  color: #ffb0b0;
+}
+
+.plugin-mkt-card-menu-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 0;
+}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+.plugin-mkt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  background: var(--bg-base);
+}
+
+.plugin-mkt-footer-stats {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+.plugin-mkt-footer-hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+}
+
+.plugin-mkt-footer-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.plugin-mkt-link-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              filter var(--duration-fast) var(--ease-out-expo);
+}
+
+.plugin-mkt-link-btn:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  filter: brightness(1.1);
+}
+
+.plugin-mkt-link-btn .codicon {
+  font-size: 13px;
+}
+
+.plugin-mkt-btn {
+  background: var(--accent);
+  color: var(--bg-base);
+  border: 1px solid var(--accent);
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  font-weight: 500;
+  transition: filter var(--duration-fast) var(--ease-out-expo);
+}
+
+.plugin-mkt-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* ============================================================
+   Unavailable state (API faltando)
+   ============================================================ */
+.plugin-mkt-unavailable {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.plugin-mkt-unavailable-icon {
+  font-size: 32px;
+  color: var(--fg-muted);
+}
+
+.plugin-mkt-unavailable-title {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--fg-primary);
+}
+
+.plugin-mkt-unavailable-msg {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+  max-width: 360px;
+  line-height: 1.5;
+}

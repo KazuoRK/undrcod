@@ -1,0 +1,48 @@
+/*
+ * SplitPane — design system applied
+ *
+ * Divider: hairline default, accent on hover (com transition lenta pra
+ * sinalizar interatividade sem ruído visual).
+ */
+
+.splitpane {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.splitpane-left {
+  flex-shrink: 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.splitpane-right {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.splitpane-divider {
+  flex-shrink: 0;
+  width: 1px;
+  background: var(--border-subtle);
+  cursor: col-resize;
+  position: relative;
+  transition: background var(--duration-base) var(--ease-out-expo);
+}
+.splitpane-divider::before {
+  /* Área de hit maior que a linha visível */
+  content: '';
+  position: absolute;
+  inset: 0 -4px;
+}
+.splitpane-divider:hover {
+  background: var(--accent);
+}

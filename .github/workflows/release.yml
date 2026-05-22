@@ -1,0 +1,94 @@
+name: Release UNDRCOD
+
+# Dispara em:
+#   - push de tag `v*` (ex: v0.0.1) → cria GitHub Release com binários
+#   - workflow_dispatch (manual run via UI Actions)
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      # NÃO cancela todos se um falhar — Mac pode falhar mas Windows segue.
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        # ci é determinístico (usa package-lock.json) — falha se lock e package divergem
+        run: npm ci
+
+      - name: Build app (electron-vite)
+        run: npm run build
+
+      - name: Build installers (electron-builder)
+        env:
+          # No CI Mac não tem cert da Apple → skip code signing.
+          # No CI Windows roda como admin por default → symlink extract de winCodeSign funciona.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          # Token pro electron-builder publicar na Release (auto-publish quando tag).
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx electron-builder --publish never
+
+      - name: Upload Windows artifacts
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: |
+            dist/*.exe
+            dist/*.zip
+            dist/latest*.yml
+          retention-days: 30
+
+      - name: Upload macOS artifacts
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-installer
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/latest*.yml
+          retention-days: 30
+
+  # Junta artifacts dos 2 runners numa Release GitHub única.
+  # Só roda em push de tag — manual dispatch fica só com artifacts.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/windows-installer/*
+            artifacts/macos-installer/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

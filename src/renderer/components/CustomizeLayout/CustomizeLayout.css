@@ -1,0 +1,141 @@
+/*
+ * CustomizeLayout — modal central com backdrop semi-transparente.
+ * Match VS Code: lista de toggles com checkbox + label + shortcut.
+ */
+
+.customize-layout-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 80px;
+  animation: customizeLayoutBackdropIn var(--duration-fast) var(--ease-out-expo);
+}
+
+@keyframes customizeLayoutBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.customize-layout-modal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  min-width: 480px;
+  max-width: 560px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  animation: customizeLayoutModalIn var(--duration-base) var(--ease-out-expo);
+}
+
+@keyframes customizeLayoutModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.customize-layout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px 10px 10px;
+}
+
+.customize-layout-title {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--fg-primary);
+  font-weight: 500;
+}
+
+.customize-layout-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+.customize-layout-close:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.customize-layout-section-title {
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  padding: 6px 10px;
+}
+
+.customize-layout-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--fg-secondary);
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+
+.customize-layout-row:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.customize-layout-row.is-on {
+  color: var(--fg-primary);
+}
+
+.customize-layout-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-input);
+  flex-shrink: 0;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.customize-layout-checkbox.is-checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.customize-layout-checkbox .codicon {
+  font-size: 11px;
+}
+
+.customize-layout-label {
+  flex: 1;
+  min-width: 0;
+}

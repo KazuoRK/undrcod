@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>UNDRCod logo</title>
+  <!-- Wordmark: underscore "_" — ponto de início, cursor, foco.
+       Linha azul horizontal com cantos arredondados em background dark. -->
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4D8BFF"/>
+      <stop offset="100%" stop-color="#7A5BFF"/>
+    </linearGradient>
+    <filter id="logoGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feFlood flood-color="#4D8BFF" flood-opacity="0.45"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Background squircle (iOS-style rounded corners). Comment out se quiser logo standalone.
+       Cor: #000000 (preto puro) — máximo contraste com o azul do underscore. -->
+  <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="#000000"/>
+  <!-- Underscore: rect com cantos totalmente arredondados (pill).
+       Posição: vertical-bottom (~63%), horizontal-center. Width ~50% do canvas.
+       Fica ABAIXO da meia-altura porque é underline — embaixo da baseline. -->
+  <rect x="128" y="320" width="256" height="32" rx="16" ry="16"
+        fill="#4D8BFF" filter="url(#logoGlow)"/>
+</svg>

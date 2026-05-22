@@ -1,0 +1,247 @@
+/*
+ * ComposerPopover — popup menu Claude Code-like.
+ * Dark background, items com icon/label/shortcut, hover state, divider, toggle.
+ */
+
+.composer-popover {
+  position: fixed;
+  z-index: 200;
+  background: var(--bg-elevated);            /* responde ao theme */
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);                       /* Claude Code radius */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--fg-secondary);
+  user-select: none;
+  animation: composerPopoverIn 140ms var(--ease-out-expo);
+  max-width: 340px;
+  /* Cap altura: menus grandes (Run/Selection/View) rolam em vez de vazar a janela.
+   * 70vh deixa folga pra topbar + statusbar continuarem visíveis. */
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Scrollbar minimal pra rolagem dentro do menu */
+.composer-popover::-webkit-scrollbar {
+  width: 6px;
+}
+.composer-popover::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 3px;
+}
+.composer-popover::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-muted);
+}
+
+@keyframes composerPopoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.composer-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  gap: var(--space-2);
+}
+
+.composer-popover-title {
+  font-weight: 400;
+}
+
+/*
+ * Shortcut chips agora vivem em global.css (.kbd / .kbd-row).
+ * Aliases .composer-popover-shortcut / .composer-popover-kbd estão lá
+ * via grouped selector pra retro-compat. Não duplicar aqui.
+ */
+
+/* Item normal — botão clicável (compacto estilo VS Code/Cursor) */
+.composer-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  min-height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);                 /* 13px — VS Code/Cursor menu density */
+  font-weight: 400;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background var(--duration-instant) var(--ease-out-expo),
+              color var(--duration-instant) var(--ease-out-expo);
+}
+
+.composer-popover-item:hover:not(.is-disabled):not(:disabled) {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+
+.composer-popover-item.is-selected {
+  color: var(--fg-primary);
+}
+
+.composer-popover-item.is-submenu-open {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+
+/* Submenu container (segundo popover) */
+.composer-popover-submenu {
+  animation: composerSubmenuIn 120ms var(--ease-out-expo);
+}
+
+@keyframes composerSubmenuIn {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.composer-popover-item.is-disabled,
+.composer-popover-item:disabled {
+  color: var(--fg-disabled);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.composer-popover-icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+}
+
+.composer-popover-icon .codicon {
+  font-size: 14px;
+}
+
+.composer-popover-item:hover:not(.is-disabled):not(:disabled) .composer-popover-icon {
+  color: var(--fg-secondary);
+}
+
+.composer-popover-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.composer-popover-check,
+.composer-popover-chevron {
+  font-size: 14px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+/* Checkmark do item selected — neutro (não accent) pra match Claude Code */
+.composer-popover-check {
+  color: var(--fg-secondary);
+}
+
+/* Shortcut em item normal — número/letra solta, sem kbd box */
+.composer-popover-item-shortcut {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Divider entre seções — bem sutil (Claude Code-style) */
+.composer-popover-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 3px 0;
+  flex-shrink: 0;
+}
+
+/* Section header inline (header de uma sub-section dentro do menu) */
+.composer-popover-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px var(--space-3) 4px;
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  flex-shrink: 0;
+  gap: var(--space-2);
+}
+
+.composer-popover-section-title {
+  font-weight: 400;
+}
+
+/* Badge muted ao lado do label (ex: "Legado") */
+.composer-popover-badge {
+  margin-left: var(--space-2);
+  color: var(--fg-muted);
+  font-size: 0.9em;
+  font-weight: 400;
+}
+
+/* Texto de descrição (item info pra items disabled) */
+.composer-popover-description {
+  padding: 2px var(--space-3) 6px calc(var(--space-3) + 24px);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  font-style: italic;
+}
+
+/* Toggle switch (iOS style minimal) */
+.composer-popover-toggle {
+  display: inline-block;
+  width: 28px;
+  height: 16px;
+  background: var(--bg-input);
+  border-radius: var(--radius-pill);
+  position: relative;
+  transition: background var(--duration-fast) var(--ease-out-expo);
+  flex-shrink: 0;
+}
+
+.composer-popover-toggle.is-on {
+  background: var(--accent);
+}
+
+.composer-popover-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: var(--fg-primary);
+  border-radius: 50%;
+  transition: transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.composer-popover-toggle.is-on .composer-popover-toggle-knob {
+  transform: translateX(12px);
+}

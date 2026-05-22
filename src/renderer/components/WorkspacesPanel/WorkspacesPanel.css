@@ -1,0 +1,224 @@
+/*
+ * WorkspacesPanel — explorer de workspaces conhecidos + sessões salvas.
+ * Substitui a tab "Arquivos" do popover Visualizacoes.
+ */
+
+.workspaces-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workspaces-panel-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  margin: 8px 8px 4px 8px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.workspaces-panel-search .codicon {
+  font-size: 13px;
+}
+
+.workspaces-panel-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  min-width: 0;
+}
+
+.workspaces-panel-search input::placeholder {
+  color: var(--fg-muted);
+}
+
+.workspaces-panel-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+  min-height: 0;
+}
+
+.workspaces-panel-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: var(--space-5);
+  text-align: center;
+  color: var(--fg-muted);
+}
+
+.workspaces-panel-empty .codicon {
+  font-size: 28px;
+  opacity: 0.5;
+}
+
+.workspaces-panel-empty-hint {
+  font-size: var(--text-xs);
+  max-width: 280px;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+/* Workspace row */
+.workspace-row {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-md);
+}
+
+.workspace-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  color: var(--fg-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+
+.workspace-header:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.workspace-row.is-current .workspace-header {
+  color: var(--fg-primary);
+}
+
+.workspace-chevron {
+  font-size: 11px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.workspace-icon {
+  font-size: 14px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.workspace-name {
+  flex: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspace-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+}
+
+.workspace-current-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--accent);
+  padding: 1px 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  margin-left: 4px;
+}
+
+/* Sessions list (expanded state) */
+.workspace-sessions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 0 4px 24px;
+}
+
+.workspace-new-session,
+.workspace-session {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  color: var(--fg-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+
+.workspace-new-session:hover,
+.workspace-session:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.workspace-new-session {
+  color: var(--accent);
+  font-style: italic;
+}
+
+.workspace-new-session:hover {
+  color: var(--accent);
+}
+
+.workspace-session-icon {
+  font-size: 12px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.workspace-session-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.workspace-session-title {
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--text-sm);
+}
+
+.workspace-session-meta {
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.workspace-sessions-loading,
+.workspace-sessions-empty {
+  padding: 6px 8px;
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

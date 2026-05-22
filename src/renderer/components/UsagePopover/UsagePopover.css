@@ -1,0 +1,190 @@
+/*
+ * UsagePopover — Context Window + Plan Usage panel.
+ * Match Claude Code: dark popover, progress bars azuis.
+ * Trigger: click no ContextRing ao lado do model badge.
+ */
+
+.context-ring-btn {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  transition: background var(--duration-fast) var(--ease-out-expo);
+  -webkit-app-region: no-drag;
+}
+
+.context-ring-btn:hover {
+  background: var(--bg-elevated);
+}
+
+.context-ring-btn.is-active {
+  background: var(--bg-active);
+}
+
+.usage-popover {
+  position: fixed;
+  z-index: 1000;
+  min-width: 320px;
+  max-width: 380px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  animation: usagePopoverFadeIn var(--duration-fast) var(--ease-out-expo);
+}
+
+@keyframes usagePopoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Row generica (Context Window OU metric) */
+.usage-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  width: 100%;
+  border-radius: var(--radius-md);
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+
+.usage-row-clickable {
+  cursor: pointer;
+}
+
+.usage-row-clickable:hover {
+  background: var(--bg-elevated);
+}
+
+.usage-row-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+}
+
+.usage-row-label {
+  color: var(--fg-primary);
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+}
+
+.usage-row-value {
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.usage-row-reset {
+  color: var(--fg-muted);
+}
+
+.usage-row-chevron {
+  font-size: 13px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+/* Progress bar — track + fill */
+.usage-progress {
+  width: 100%;
+  height: 3px;
+  background: var(--bg-elevated);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.usage-progress-fill {
+  height: 100%;
+  background: #4a9eff; /* azul Claude Code */
+  border-radius: 2px;
+  transition: width var(--duration-base) var(--ease-out-expo);
+}
+
+/* Token breakdown (input/output/cache hit/cache write) */
+.usage-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 10px 4px 10px;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 4px;
+}
+
+.usage-breakdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+.usage-breakdown-label {
+  color: var(--fg-muted);
+}
+
+.usage-breakdown-value {
+  color: var(--fg-secondary);
+  font-family: var(--font-mono);
+}
+
+/* Footer (custo + turnos) */
+.usage-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 10px 4px 10px;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 4px;
+}
+
+.usage-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+.usage-footer-label {
+  color: var(--fg-muted);
+}
+
+.usage-footer-value {
+  color: var(--fg-primary);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+/* Empty state — quando não tem usage ainda */
+.usage-empty {
+  padding: 14px 16px;
+  text-align: center;
+}
+
+.usage-empty-text {
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}

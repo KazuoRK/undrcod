@@ -1,0 +1,318 @@
+/*
+ * ChatView Variants — 3 mood boards alternativos pro chat.
+ *
+ * Trocar via localStorage no DevTools console:
+ *   localStorage.setItem('chatVariant', 'minimalist'); location.reload()
+ *   localStorage.setItem('chatVariant', 'brutalist'); location.reload()
+ *   localStorage.setItem('chatVariant', 'editorial'); location.reload()
+ *   localStorage.removeItem('chatVariant'); location.reload()  // volta default
+ *
+ * Cada variante é um redesign COMPLETO do visual da conversa (bubbles, tools,
+ * tipografia). Aplicam-se via `data-variant="X"` no `.chatview` root.
+ *
+ * Inspirações:
+ *   - minimalist → Linear / Raycast / Things 3 (quase invisible, type-driven)
+ *   - brutalist  → Berkeley Mono sites / Are.na / Vercel old (intentionally raw)
+ *   - editorial  → Substack / Medium / NYT (serif headings, generous spacing)
+ *
+ * Princípio dos 3 dials (taste-skill):
+ *   minimalist: variance 2, motion 2, density 3
+ *   brutalist:  variance 9, motion 4, density 8
+ *   editorial:  variance 5, motion 3, density 5
+ */
+
+
+/* ============================================================================
+ * MINIMALIST — Linear / Raycast vibe
+ *
+ * Filosofia: chat É o conteúdo, UI desaparece. Sem bubbles. Sem accents.
+ * Hierarquia via weight + indentação sutil. Tipo arquitetura japonesa: vazio
+ * é design, não falta de design.
+ * ============================================================================ */
+.chatview[data-variant="minimalist"] {
+  --variant-fg: var(--fg-primary);
+  --variant-muted: var(--fg-muted);
+  --variant-accent-user: color-mix(in oklab, var(--fg-primary) 96%, var(--accent));
+}
+
+.chatview[data-variant="minimalist"] .msg-user {
+  align-items: flex-start;  /* tudo left-aligned, sem speaker direction */
+}
+
+.chatview[data-variant="minimalist"] .msg-user .msg-bubble {
+  background: transparent;
+  border: 0;
+  border-left: 2px solid color-mix(in oklab, var(--accent) 60%, transparent);
+  border-radius: 0;
+  padding: 2px 0 2px 12px;
+  max-width: 65ch;
+  color: var(--variant-fg);
+  font-weight: 500;
+}
+
+.chatview[data-variant="minimalist"] .msg-assistant .msg-bubble {
+  background: transparent;
+  padding: 0;
+  border: 0;
+  max-width: 65ch;
+  color: var(--variant-fg);
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+.chatview[data-variant="minimalist"] .msg-assistant .msg-bubble h1,
+.chatview[data-variant="minimalist"] .msg-assistant .msg-bubble h2,
+.chatview[data-variant="minimalist"] .msg-assistant .msg-bubble h3 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--variant-fg);
+}
+
+.chatview[data-variant="minimalist"] .msg-assistant .msg-bubble code:not(pre code) {
+  background: transparent;
+  border: 0;
+  padding: 0 2px;
+  font-family: var(--font-mono);
+  color: var(--variant-muted);
+  font-size: 0.9em;
+}
+
+.chatview[data-variant="minimalist"] .msg-assistant .msg-bubble pre {
+  background: color-mix(in oklab, var(--bg-elevated) 50%, transparent);
+  border: 0;
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+
+/* Tool cards: 1 linha hairline */
+.chatview[data-variant="minimalist"] .tool-card {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid color-mix(in oklab, var(--border-subtle) 40%, transparent);
+  border-radius: 0;
+  margin-top: 4px;
+}
+
+.chatview[data-variant="minimalist"] .tool-card-header {
+  padding: 6px 0;
+}
+
+.chatview[data-variant="minimalist"] .tool-card-icon-wrap {
+  display: none;  /* ícone some, só nome + summary */
+}
+
+.chatview[data-variant="minimalist"] .chatview-virtual-row {
+  padding-bottom: 24px;  /* mais respiro entre messages */
+}
+
+
+/* ============================================================================
+ * BRUTALIST — raw, mono, deliberately ugly-beautiful
+ *
+ * Filosofia: chat é DOCUMENTO técnico. Mono everywhere. Bordas pretas pesadas.
+ * Sem radius (radius é polite, brutalist é confrontacional). Uppercase labels.
+ * Inspiração: Berkeley Mono homepage, Vercel circa 2020, Are.na old.
+ * ============================================================================ */
+.chatview[data-variant="brutalist"] {
+  font-family: var(--font-mono);
+  --variant-border: color-mix(in oklab, var(--fg-primary) 70%, transparent);
+}
+
+.chatview[data-variant="brutalist"] .msg-user .msg-bubble {
+  background: var(--fg-primary);
+  color: var(--bg-base);
+  border: 0;
+  border-radius: 0;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  max-width: 60%;
+}
+
+.chatview[data-variant="brutalist"] .msg-assistant .msg-bubble {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--fg-primary);
+}
+
+.chatview[data-variant="brutalist"] .msg-assistant .msg-bubble h1,
+.chatview[data-variant="brutalist"] .msg-assistant .msg-bubble h2,
+.chatview[data-variant="brutalist"] .msg-assistant .msg-bubble h3 {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  border-bottom: 2px solid var(--variant-border);
+  padding-bottom: 4px;
+  margin-top: 1.5em;
+}
+
+.chatview[data-variant="brutalist"] .msg-assistant .msg-bubble h1 { font-size: 1.3em; }
+.chatview[data-variant="brutalist"] .msg-assistant .msg-bubble h2 { font-size: 1.15em; }
+.chatview[data-variant="brutalist"] .msg-assistant .msg-bubble h3 { font-size: 1em; }
+
+.chatview[data-variant="brutalist"] .msg-assistant .msg-bubble code:not(pre code) {
+  background: var(--fg-primary);
+  color: var(--bg-base);
+  border-radius: 0;
+  padding: 1px 6px;
+  font-weight: 600;
+}
+
+.chatview[data-variant="brutalist"] .msg-assistant .msg-bubble pre {
+  background: var(--bg-base);
+  border: 2px solid var(--variant-border);
+  border-radius: 0;
+  padding: 12px 14px;
+}
+
+/* Bullet → square */
+.chatview[data-variant="brutalist"] .msg-assistant .msg-bubble ul > li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--fg-primary);
+  border-radius: 0;
+  top: 0.55em;
+}
+
+/* Tool cards: caixa quadrada, border preto grosso */
+.chatview[data-variant="brutalist"] .tool-card {
+  background: var(--bg-base);
+  border: 2px solid var(--variant-border);
+  border-radius: 0;
+}
+
+.chatview[data-variant="brutalist"] .tool-card-header {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--variant-border);
+}
+
+.chatview[data-variant="brutalist"] .tool-card-name {
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.chatview[data-variant="brutalist"] .tool-card-status {
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+
+/* ============================================================================
+ * EDITORIAL — Substack / Medium / NYT vibe
+ *
+ * Filosofia: chat é LEITURA. Serif pros headings (gravitas). Sans body
+ * generoso. Drop caps. Pull quotes elegantes. Type carrega o design.
+ * ============================================================================ */
+.chatview[data-variant="editorial"] {
+  --variant-serif: 'Playfair Display', 'Georgia', serif;
+  --variant-sans: var(--font-body);
+}
+
+.chatview[data-variant="editorial"] .msg-user .msg-bubble {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 4px 0 4px 16px;
+  border-left: 3px solid var(--accent);
+  max-width: 65ch;
+  font-family: var(--variant-sans);
+  font-style: italic;
+  color: var(--fg-secondary);
+  font-size: 0.95em;
+}
+
+.chatview[data-variant="editorial"] .msg-assistant .msg-bubble {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  max-width: 68ch;
+  font-family: var(--variant-sans);
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--fg-primary);
+}
+
+.chatview[data-variant="editorial"] .msg-assistant .msg-bubble h1,
+.chatview[data-variant="editorial"] .msg-assistant .msg-bubble h2,
+.chatview[data-variant="editorial"] .msg-assistant .msg-bubble h3 {
+  font-family: var(--variant-serif);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-top: 1.5em;
+}
+
+.chatview[data-variant="editorial"] .msg-assistant .msg-bubble h1 { font-size: 1.8em; }
+.chatview[data-variant="editorial"] .msg-assistant .msg-bubble h2 { font-size: 1.45em; }
+.chatview[data-variant="editorial"] .msg-assistant .msg-bubble h3 { font-size: 1.2em; }
+
+/* Drop cap no primeiro parágrafo */
+.chatview[data-variant="editorial"] .msg-assistant .msg-bubble > p:first-child::first-letter {
+  font-family: var(--variant-serif);
+  font-size: 3.2em;
+  font-weight: 500;
+  float: left;
+  line-height: 0.85;
+  padding: 4px 8px 0 0;
+  color: var(--accent);
+}
+
+.chatview[data-variant="editorial"] .msg-assistant .msg-bubble code:not(pre code) {
+  background: color-mix(in oklab, var(--accent) 6%, var(--bg-elevated));
+  border: 0;
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--fg-primary);
+}
+
+.chatview[data-variant="editorial"] .msg-assistant .msg-bubble pre {
+  background: var(--bg-elevated);
+  border: 0;
+  border-radius: 6px;
+  padding: 16px 20px;
+  font-size: 13px;
+}
+
+/* Blockquote tipo NYT — pull quote grande */
+.chatview[data-variant="editorial"] .msg-assistant .msg-bubble blockquote {
+  border-left: 0;
+  padding: 12px 0 12px 24px;
+  margin: 1.4em 0;
+  font-family: var(--variant-serif);
+  font-style: italic;
+  font-size: 1.2em;
+  line-height: 1.5;
+  color: var(--fg-secondary);
+  background: transparent;
+}
+
+/* Tool cards: super sutis, quase docs */
+.chatview[data-variant="editorial"] .tool-card {
+  background: color-mix(in oklab, var(--bg-elevated) 30%, transparent);
+  border: 0;
+  border-radius: 8px;
+  font-family: var(--variant-sans);
+}
+
+.chatview[data-variant="editorial"] .tool-card-header {
+  padding: 10px 14px;
+}
+
+/* Bullet → dot accent suave (já é, mas reforça) */
+.chatview[data-variant="editorial"] .msg-assistant .msg-bubble ul > li::before {
+  background: var(--accent);
+  opacity: 0.6;
+}

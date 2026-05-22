@@ -1,0 +1,113 @@
+/*
+ * Autocomplete popover pra @file mentions.
+ * Aparece acima do textarea, lista files filtered.
+ */
+
+.mention-autocomplete {
+  position: fixed;
+  z-index: 250;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  min-width: 320px;
+  max-width: 480px;
+  max-height: 380px;
+  overflow-y: auto;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--fg-secondary);
+  user-select: none;
+  animation: mentionAutocompleteIn 120ms var(--ease-out-expo);
+}
+
+@keyframes mentionAutocompleteIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mention-autocomplete-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 2px;
+}
+
+.mention-autocomplete-title {
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  font-family: var(--font-mono);
+}
+
+.mention-autocomplete-hint {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+.mention-autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  white-space: nowrap;
+  transition: background var(--duration-instant) var(--ease-out-expo);
+}
+
+.mention-autocomplete-item.is-focused,
+.mention-autocomplete-item:hover {
+  background: var(--bg-active);
+}
+
+.mention-autocomplete-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.mention-autocomplete-name {
+  flex-shrink: 0;
+  font-weight: 500;
+  color: var(--fg-primary);
+}
+
+.mention-autocomplete-dir {
+  flex: 1;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-mono);
+}
+
+.mention-autocomplete-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  background: var(--bg-input);
+  padding: 1px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}

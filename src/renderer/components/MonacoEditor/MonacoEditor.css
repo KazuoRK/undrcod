@@ -1,0 +1,373 @@
+/*
+ * MonacoEditor — container precisa de altura explícita pro automaticLayout
+ * funcionar sem ResizeObserver. Caller põe num flex item.
+ */
+
+.monaco-editor-wrap {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);             /* #141414 — area do código */
+}
+
+.monaco-editor-wrap > section,
+.monaco-editor-wrap > div[role="code"] {
+  flex: 1;
+  min-height: 0;
+}
+
+/*
+ * Override do gutter do monaco pra casar com palette UNDRCOD.
+ * Monaco aplica vs-dark inline; usamos cascata pra não brigar.
+ */
+.monaco-editor-wrap .monaco-editor,
+.monaco-editor-wrap .monaco-editor-background,
+.monaco-editor-wrap .margin {
+  background-color: var(--bg-panel) !important;
+}
+
+/* Loading state — exibido enquanto monaco bootstrap baixa o worker */
+.monaco-editor-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 8px);
+  height: 100%;
+  width: 100%;
+  color: var(--text-muted, #9b9b9b);
+  font-size: 12px;
+  font-family: var(--font-ui, system-ui, sans-serif);
+}
+
+.monaco-editor-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-subtle, #333);
+  border-top-color: var(--accent, #d4a574);
+  border-radius: 50%;
+  animation: monaco-spin 0.8s linear infinite;
+}
+
+@keyframes monaco-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+ * ============================================================
+ * Inline diff decorations
+ * ============================================================
+ * Pintura de linhas adicionadas/removidas + glyph margin com
+ * indicadores Accept/Reject. Aplicado via editor.deltaDecorations
+ * em MonacoEditor.tsx quando inlineDiff prop ou evento
+ * `undrcod:show-inline-diff` é recebido.
+ *
+ * Convenções de uso:
+ *   - click no "+" glyph  → Accept (dispara undrcod:inline-diff-accept)
+ *   - Alt+click ou right click no glyph → Reject (undrcod:inline-diff-reject)
+ */
+
+/* Linha adicionada — fundo verde translúcido na linha inteira */
+.monaco-editor-wrap .monaco-inline-add {
+  background: color-mix(in srgb, var(--accent-success, #4caf50) 18%, transparent);
+}
+
+/* Linha removida — fundo vermelho + line-through + opacidade reduzida */
+.monaco-editor-wrap .monaco-inline-remove {
+  background: color-mix(in srgb, var(--red, #e57373) 18%, transparent);
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* Glyph margin: marcador "+" verde pra linhas adicionadas */
+.monaco-editor-wrap .glyph-add {
+  cursor: pointer;
+}
+.monaco-editor-wrap .glyph-add::before {
+  content: '+';
+  color: var(--accent-success, #4caf50);
+  font-weight: 700;
+  font-size: 14px;
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  line-height: 1;
+}
+
+/* Glyph margin: marcador "-" vermelho pra linhas removidas */
+.monaco-editor-wrap .glyph-remove {
+  cursor: pointer;
+}
+.monaco-editor-wrap .glyph-remove::before {
+  content: '-';
+  color: var(--red, #e57373);
+  font-weight: 700;
+  font-size: 16px;
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  line-height: 1;
+}
+
+/* Hover state nos glyphs — destaca quando user passa o mouse pra clicar */
+.monaco-editor-wrap .glyph-add:hover::before,
+.monaco-editor-wrap .glyph-remove:hover::before {
+  transform: scale(1.25);
+  transition: transform 120ms ease;
+}
+
+/* Borda lateral fina na gutter pra reforçar a coluna afetada */
+.monaco-editor-wrap .monaco-inline-add-gutter {
+  border-left: 2px solid var(--accent-success, #4caf50);
+}
+.monaco-editor-wrap .monaco-inline-remove-gutter {
+  border-left: 2px solid var(--red, #e57373);
+}
+
+/*
+ * ============================================================
+ * Bookmarks de linha
+ * ============================================================
+ * Ctrl+F2 toggle, F2 next, Shift+F2 previous.
+ * Marcador na glyphMargin: círculo azul preenchido.
+ * Persistido em localStorage por path.
+ */
+.monaco-editor-wrap .undrcod-bookmark-glyph {
+  cursor: pointer;
+}
+.monaco-editor-wrap .undrcod-bookmark-glyph::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #5B8DEF;
+  box-shadow: 0 0 4px rgba(91, 141, 239, 0.5);
+  margin-top: 6px;
+  margin-left: 6px;
+}
+.monaco-editor-wrap .undrcod-bookmark-glyph:hover::before {
+  transform: scale(1.4);
+  transition: transform 120ms ease;
+}
+
+/*
+ * ============================================================
+ * Scrollbar customizada — match global.css scrollbar do app
+ * ============================================================
+ * Monaco renderiza scrollbars via .monaco-scrollable-element > .scrollbar
+ * com um child .slider que é o thumb. Por default usa cores cinza opaco
+ * que destoam do resto do app (tokens var(--border-strong)/var(--fg-muted)).
+ *
+ * Override: faz o slider usar mesma palette (border-strong + hover fg-muted
+ * + active fg-secondary) com border-radius pra ficar igual ao webkit
+ * scrollbar do global.css. Track fica transparente.
+ */
+/* Scope GLOBAL — pega qualquer Monaco editor no app (não só .monaco-editor-wrap).
+ * Cobre diff viewer, completions, etc. */
+.monaco-scrollable-element > .scrollbar > .slider,
+.monaco-editor .scrollbar > .slider {
+  background: var(--border-strong) !important;
+  border-radius: 8px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+}
+.monaco-scrollable-element > .scrollbar > .slider:hover,
+.monaco-editor .scrollbar > .slider:hover {
+  background: var(--fg-muted) !important;
+  background-clip: padding-box !important;
+}
+.monaco-scrollable-element > .scrollbar > .slider.active,
+.monaco-editor .scrollbar > .slider.active {
+  background: var(--accent) !important;
+  background-clip: padding-box !important;
+}
+/* Track sempre transparente */
+.monaco-scrollable-element > .scrollbar,
+.monaco-editor .scrollbar {
+  background: transparent !important;
+}
+/* Esconde shadow esquerdo/topo (default Monaco) que polui visual */
+.monaco-scrollable-element > .shadow,
+.monaco-editor > .shadow {
+  box-shadow: none !important;
+}
+/* Botões/arrows do scrollbar — sempre escondidos (igual webkit no global) */
+.monaco-scrollable-element > .scrollbar .arrow-background,
+.monaco-editor .scrollbar .arrow-background,
+.monaco-editor .scrollbar .codicon {
+  display: none !important;
+}
+/* Overview ruler — strip vertical à direita que mostra find/cursors/diff
+ * markers. Por default Monaco usa cores chamativas (laranja/amarelo) que
+ * destoam. Esconde por enquanto pra ficar uniforme. Se quiser reativar com
+ * cor accent, troca display por background custom. */
+.monaco-editor .decorationsOverviewRuler {
+  display: none !important;
+}
+
+/*
+ * ============================================================
+ * Find / occurrence highlights — repinta amarelo Monaco
+ * ============================================================
+ * Monaco vs-dark usa #f6b94d (amarelo) pra borda dos find matches
+ * e word/selection highlights. Destoa do tema champagne do app.
+ * Trocamos pela paleta accent (champagne) com transparência.
+ *
+ * Classes afetadas:
+ *   - .findMatch          → match comum (Ctrl+F)
+ *   - .currentFindMatch   → match atualmente focado
+ *   - .selectionHighlight → outras ocorrências da seleção
+ *   - .wordHighlight      → ocorrência do símbolo sob cursor
+ *   - .wordHighlightStrong → ocorrência com write access
+ *   - .wordHighlightText  → ocorrência text-only
+ */
+.monaco-editor-wrap .monaco-editor .findMatch {
+  background-color: color-mix(in srgb, var(--accent, #d4a574) 22%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--accent, #d4a574) 50%, transparent) !important;
+  box-sizing: border-box;
+}
+.monaco-editor-wrap .monaco-editor .currentFindMatch {
+  background-color: color-mix(in srgb, var(--accent, #d4a574) 42%, transparent) !important;
+  border: 1px solid var(--accent, #d4a574) !important;
+  box-sizing: border-box;
+}
+.monaco-editor-wrap .monaco-editor .selectionHighlight,
+.monaco-editor-wrap .monaco-editor .wordHighlight,
+.monaco-editor-wrap .monaco-editor .wordHighlightText {
+  background-color: color-mix(in srgb, var(--fg-muted, #9b9b9b) 18%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--fg-muted, #9b9b9b) 35%, transparent) !important;
+  box-sizing: border-box;
+}
+.monaco-editor-wrap .monaco-editor .wordHighlightStrong {
+  background-color: color-mix(in srgb, var(--accent, #d4a574) 18%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--accent, #d4a574) 40%, transparent) !important;
+  box-sizing: border-box;
+}
+
+/* Overview ruler (minimap-side) também pinta marcas amarelas dos finds — neutralizamos */
+.monaco-editor-wrap .monaco-editor .decorationsOverviewRuler {
+  opacity: 0.6;
+}
+
+/*
+ * ============================================================
+ * Bracket pair guides — repinta amarelo/roxo/azul Monaco
+ * ============================================================
+ * Monaco vs-dark colore bracket pairs por nível:
+ *   nível 1 = #FFD700 (gold/amarelo)  ← este é o "amarelo" da linha
+ *   nível 2 = #DA70D6 (orchid/roxo)
+ *   nível 3 = #179FFF (azul)
+ * Cores vibrantes destoam do tema champagne+earth do app.
+ * Trocamos por tons suaves do accent/fg-muted/border-strong.
+ */
+.monaco-editor-wrap .monaco-editor .bracket-highlighting-0 {
+  color: color-mix(in srgb, var(--accent, #d4a574) 75%, var(--fg-secondary)) !important;
+}
+.monaco-editor-wrap .monaco-editor .bracket-highlighting-1 {
+  color: color-mix(in srgb, var(--fg-secondary, #b8b8b8) 80%, transparent) !important;
+}
+.monaco-editor-wrap .monaco-editor .bracket-highlighting-2 {
+  color: var(--fg-muted, #9b9b9b) !important;
+}
+.monaco-editor-wrap .monaco-editor .bracket-highlighting-3 {
+  color: var(--border-strong, #555) !important;
+}
+.monaco-editor-wrap .monaco-editor .bracket-highlighting-4,
+.monaco-editor-wrap .monaco-editor .bracket-highlighting-5,
+.monaco-editor-wrap .monaco-editor .bracket-highlighting-6 {
+  color: color-mix(in srgb, var(--accent, #d4a574) 50%, var(--fg-muted)) !important;
+}
+/* Bracket pair vertical guide (linha conectando { e }) — mesmo esquema */
+.monaco-editor-wrap .monaco-editor .bracket-indent-guide.lvl-0 {
+  --guide-color: color-mix(in srgb, var(--accent, #d4a574) 45%, transparent) !important;
+}
+.monaco-editor-wrap .monaco-editor .bracket-indent-guide.lvl-1 {
+  --guide-color: color-mix(in srgb, var(--fg-muted, #9b9b9b) 35%, transparent) !important;
+}
+.monaco-editor-wrap .monaco-editor .bracket-indent-guide.lvl-2 {
+  --guide-color: color-mix(in srgb, var(--border-strong, #555) 60%, transparent) !important;
+}
+/* Bracket guide active (cursor dentro do bloco) — leve destaque sem ser berrante */
+.monaco-editor-wrap .monaco-editor .core-guide.indent-active,
+.monaco-editor-wrap .monaco-editor .bracket-indent-guide.active {
+  border-left-color: var(--accent, #d4a574) !important;
+  opacity: 0.55;
+}
+/* Indent guides "passivos" (sem cursor) ficam quase invisíveis */
+.monaco-editor-wrap .monaco-editor .core-guide {
+  border-left-color: color-mix(in srgb, var(--border-subtle, #2a2a2a) 80%, transparent) !important;
+}
+
+/*
+ * ============================================================
+ * Overflow widgets (hover/suggest/parameter-hints)
+ * ============================================================
+ * Com fixedOverflowWidgets:true, Monaco move esses widgets pro
+ * document.body em vez de ficar dentro do container do editor.
+ * Sem z-index alto, podem ficar atrás de outras layers do app
+ * (tabs, panels com z-index > auto).
+ *
+ * Container Monaco usa class .monaco-editor[role="code"] ou
+ * .monaco-aria-container; o root dos overflow widgets fica em
+ * .monaco-editor-overflow-widgets-root quando fixedOverflowWidgets=true.
+ */
+.monaco-editor-overflow-widgets-root,
+body > .monaco-editor[role="code"],
+body > .monaco-editor.no-user-select.showUnused {
+  z-index: 1000 !important;
+}
+
+/* Hover widget — repinta pra tema dark do app */
+.monaco-editor-overflow-widgets-root .monaco-hover,
+.monaco-editor-wrap .monaco-editor .monaco-hover {
+  background: var(--bg-elevated, #1d1d1d) !important;
+  border: 1px solid var(--border-strong, #3a3a3a) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  color: var(--fg-primary, #e4e4e4) !important;
+}
+.monaco-editor-overflow-widgets-root .monaco-hover .hover-row,
+.monaco-editor-wrap .monaco-editor .monaco-hover .hover-row {
+  background: transparent !important;
+}
+/* Links/refs dentro do hover */
+.monaco-editor-overflow-widgets-root .monaco-hover a,
+.monaco-editor-wrap .monaco-editor .monaco-hover a {
+  color: var(--accent, #d4a574) !important;
+}
+/* Code inline dentro do hover (ex: <code>http-equiv</code>) */
+.monaco-editor-overflow-widgets-root .monaco-hover code,
+.monaco-editor-wrap .monaco-editor .monaco-hover code {
+  background: var(--bg-active, #2a2a2a) !important;
+  color: var(--accent, #d4a574) !important;
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+
+/* Suggest widget (IntelliSense dropdown) — mesmo tema */
+.monaco-editor-overflow-widgets-root .suggest-widget,
+.monaco-editor-wrap .monaco-editor .suggest-widget {
+  background: var(--bg-elevated, #1d1d1d) !important;
+  border: 1px solid var(--border-strong, #3a3a3a) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+.monaco-editor-overflow-widgets-root .suggest-widget .monaco-list-row.focused,
+.monaco-editor-wrap .monaco-editor .suggest-widget .monaco-list-row.focused {
+  background: color-mix(in srgb, var(--accent, #d4a574) 22%, transparent) !important;
+  color: var(--fg-primary) !important;
+}
+
+/* Parameter hints (function signature) */
+.monaco-editor-overflow-widgets-root .parameter-hints-widget,
+.monaco-editor-wrap .monaco-editor .parameter-hints-widget {
+  background: var(--bg-elevated, #1d1d1d) !important;
+  border: 1px solid var(--border-strong, #3a3a3a) !important;
+  border-radius: 6px !important;
+}

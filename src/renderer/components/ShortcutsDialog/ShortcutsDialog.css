@@ -1,0 +1,304 @@
+/*
+ * ShortcutsDialog — modal centralizado listando os atalhos do UNDRCOD.
+ *
+ * Match design system: usa tokens --surface-1/--surface-2/--border-color/--accent.
+ * Mesma família visual do SettingsModal/Palette/DiffViewer (backdrop com blur,
+ * radius 12px, sombra forte, animação de entrada sutil).
+ *
+ * IMPORTANTE: chips de tecla seguem o estilo global `.kbd` / `.kbd-row` em global.css.
+ * Aqui só extendemos com tamanho/espaçamento quando precisamos. Nunca redefine `.kbd`.
+ */
+
+.shortcuts-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  backdrop-filter: blur(2px);
+  animation: shortcutsOverlayIn 140ms ease-out;
+}
+
+@keyframes shortcutsOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.shortcuts-modal {
+  background: var(--bg-panel, var(--surface-1, #141414));
+  border: 1px solid var(--border-subtle, var(--border-color, #232328));
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  width: min(720px, 100%);
+  max-height: min(80vh, 800px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: shortcutsModalIn 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes shortcutsModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================================
+   Header — título + search + close
+   ============================================================ */
+.shortcuts-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle, var(--border-color, #232328));
+  flex-shrink: 0;
+}
+
+.shortcuts-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-base, 14px);
+  font-weight: 600;
+  color: var(--fg-primary, #e4e4e7);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.shortcuts-title .codicon {
+  color: var(--fg-muted, #7a7a82);
+  font-size: 16px;
+}
+
+.shortcuts-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  background: var(--bg-elevated, var(--surface-2, #1f1f1f));
+  border: 1px solid var(--border-subtle, var(--border-color, #232328));
+  border-radius: var(--radius-md);
+  height: 30px;
+  transition: border-color 140ms ease-out;
+  min-width: 0;
+}
+
+.shortcuts-search:focus-within {
+  border-color: var(--accent, #4F8FFA);
+}
+
+.shortcuts-search-icon {
+  color: var(--fg-muted, #7a7a82);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.shortcuts-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--fg-primary, #e4e4e7);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 0;
+  min-width: 0;
+}
+
+.shortcuts-search-input::placeholder {
+  color: var(--fg-muted, #7a7a82);
+}
+
+.shortcuts-search-clear,
+.shortcuts-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted, #7a7a82);
+  transition: background 120ms ease-out, color 120ms ease-out;
+  flex-shrink: 0;
+}
+
+.shortcuts-search-clear:hover,
+.shortcuts-close:hover {
+  background: var(--bg-elevated, var(--surface-2, #1f1f1f));
+  color: var(--fg-primary, #e4e4e7);
+}
+
+.shortcuts-close {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+}
+
+/* ============================================================
+   Body — scrollable, lista de sections
+   ============================================================ */
+.shortcuts-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0 8px;
+  min-height: 0;
+}
+
+.shortcuts-body::-webkit-scrollbar {
+  width: 10px;
+}
+.shortcuts-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.shortcuts-body::-webkit-scrollbar-thumb {
+  background: var(--border-subtle, var(--border-color, #232328));
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.shortcuts-body::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-muted, #7a7a82);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.shortcuts-section {
+  padding: 12px 16px 6px;
+}
+
+.shortcuts-section + .shortcuts-section {
+  border-top: 1px solid var(--border-subtle, var(--border-color, #232328));
+  margin-top: 4px;
+  padding-top: 14px;
+}
+
+.shortcuts-section-title {
+  margin: 0 0 8px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted, #7a7a82);
+}
+
+.shortcuts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.shortcuts-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 8px;
+  border-radius: var(--radius-md);
+  transition: background 100ms ease-out;
+  min-height: 32px;
+}
+
+.shortcuts-row:hover {
+  background: var(--bg-elevated, var(--surface-2, #1f1f1f));
+}
+
+.shortcuts-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.shortcuts-row-desc {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--fg-secondary, #b8b8bd);
+  line-height: 1.35;
+}
+
+.shortcuts-row-context {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--fg-muted, #7a7a82);
+  font-style: italic;
+}
+
+.shortcuts-row-keys {
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Empty state (filtro sem match)
+   ============================================================ */
+.shortcuts-empty {
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--fg-muted, #7a7a82);
+}
+
+.shortcuts-empty-icon {
+  font-size: 28px;
+  opacity: 0.5;
+  margin-bottom: 8px;
+}
+
+.shortcuts-empty-title {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-secondary, #b8b8bd);
+}
+
+.shortcuts-empty-hint {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* ============================================================
+   Footer — total + dica esc
+   ============================================================ */
+.shortcuts-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-subtle, var(--border-color, #232328));
+  background: var(--bg-elevated, var(--surface-2, #1f1f1f));
+  flex-shrink: 0;
+}
+
+.shortcuts-footer-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-muted, #7a7a82);
+}
+
+.shortcuts-footer-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--fg-muted, #7a7a82);
+}

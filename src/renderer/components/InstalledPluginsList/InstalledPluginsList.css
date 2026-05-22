@@ -1,0 +1,521 @@
+/* InstalledPluginsList — sidebar view pra plugins instalados.
+ * Pattern: match Cursor Extensions sidebar (compact list + browse btn).
+ */
+
+.installed-plugins {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--bg-card);
+}
+
+.installed-plugins-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.installed-plugins-title {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+}
+
+.installed-plugins-refresh {
+  background: transparent;
+  border: 0;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.installed-plugins-refresh:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.installed-plugins-refresh .codicon { font-size: 13px; }
+
+.installed-plugins-search-wrap {
+  position: relative;
+  margin: 8px 10px 6px;
+  flex-shrink: 0;
+}
+.installed-plugins-search-icon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--fg-muted);
+  font-size: 12px;
+  pointer-events: none;
+}
+.installed-plugins-search {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px 6px 28px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--fg-primary);
+  outline: none;
+}
+.installed-plugins-search:focus {
+  border-color: var(--accent);
+}
+.installed-plugins-search::placeholder {
+  color: var(--fg-muted);
+}
+
+.installed-plugins-browse {
+  margin: 0 10px 10px;
+  padding: 6px 10px;
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--accent) 22%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+  flex-shrink: 0;
+  height: 28px;
+}
+.installed-plugins-browse:hover {
+  background: color-mix(in oklab, var(--accent) 20%, transparent);
+  border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+}
+.installed-plugins-browse .codicon {
+  font-size: 12px;
+}
+
+.installed-plugins-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px 4px;
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+.installed-plugins-count {
+  background: var(--bg-elevated);
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: var(--fg-secondary);
+  min-width: 18px;
+  text-align: center;
+}
+
+.installed-plugins-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 6px 12px;
+}
+
+.installed-plugin-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: default;
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+.installed-plugin-card:hover {
+  background: var(--bg-elevated);
+}
+.installed-plugin-card:focus-within {
+  background: var(--bg-elevated);
+  outline: 1px solid color-mix(in oklab, var(--accent) 40%, transparent);
+  outline-offset: -1px;
+}
+
+/* Keyboard a11y — buttons internos ganham ring distinto do card. */
+.installed-plugin-toggle:focus-visible,
+.installed-plugin-uninstall:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.installed-plugins-refresh:focus-visible,
+.installed-plugins-browse:focus-visible,
+.installed-plugins-search:focus-visible,
+.installed-plugins-empty-action:focus-visible,
+.skill-card-install:focus-visible,
+.skill-card-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.installed-plugin-card.is-disabled {
+  opacity: 0.5;
+}
+
+/* Avatar — gradient azul accent com initial do plugin pra parecer logo */
+.installed-plugin-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--accent) 35%, var(--bg-elevated)),
+    color-mix(in oklab, var(--accent) 18%, var(--bg-elevated)));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 20%, transparent);
+}
+.installed-plugin-icon .codicon {
+  font-size: 14px;
+}
+
+.installed-plugin-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.installed-plugin-name {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.installed-plugin-meta {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  color: var(--fg-muted);
+  display: flex;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.installed-plugin-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.installed-plugin-toggle {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-input);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+.installed-plugin-toggle.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.installed-plugin-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--fg-secondary);
+  transition: transform var(--duration-base) var(--ease-out-expo),
+              background var(--duration-fast) var(--ease-out-expo);
+}
+.installed-plugin-toggle.is-on .installed-plugin-toggle-thumb {
+  transform: translateX(12px);
+  background: #fff;
+}
+.installed-plugin-toggle:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+/* Trash: invisível por padrão, aparece SÓ no hover do card */
+.installed-plugin-uninstall {
+  background: transparent;
+  border: 0;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out-expo),
+              background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.installed-plugin-card:hover .installed-plugin-uninstall {
+  opacity: 1;
+}
+.installed-plugin-uninstall:hover {
+  background: color-mix(in oklab, var(--red-500, #ef4444) 14%, transparent);
+  color: var(--red-500, #ef4444);
+}
+.installed-plugin-uninstall:disabled {
+  opacity: 0.4;
+  cursor: wait;
+}
+.installed-plugin-uninstall .codicon { font-size: 13px; }
+
+.installed-plugins-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 12px;
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  font-size: 12px;
+  text-align: center;
+}
+.installed-plugins-empty .codicon {
+  font-size: 24px;
+  opacity: 0.5;
+}
+.installed-plugins-empty-action {
+  margin-top: 4px;
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Empty state compacto — usado quando o filter zerou uma section mas a outra
+ * tem coisas (evita ocupar muito espaço vertical). */
+.installed-plugins-empty-compact {
+  padding: 10px 12px;
+  font-size: 11px;
+}
+
+/* =====================================================================
+ * Skill cards — catálogo curado (SKILLS RECOMENDADAS)
+ * Mesmo footprint dos plugin cards mas com tonalidade própria por categoria
+ * e botão de install ao invés de toggle+trash.
+ * ===================================================================== */
+
+.skill-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: default;
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+.skill-card:hover {
+  background: var(--bg-elevated);
+}
+
+/* Icon tile com tonalidade por categoria — distingue skill de plugin sem
+ * gritar (mesmo tamanho, mesma estrutura, só o tom da gradient muda). */
+.skill-card-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+  /* Default = accent — overridden por data-category abaixo */
+  color: var(--accent);
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--accent) 35%, var(--bg-elevated)),
+    color-mix(in oklab, var(--accent) 18%, var(--bg-elevated)));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 20%, transparent);
+}
+.skill-card-icon[data-category='design'] {
+  color: var(--accent);
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--accent) 35%, var(--bg-elevated)),
+    color-mix(in oklab, var(--accent) 18%, var(--bg-elevated)));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 20%, transparent);
+}
+.skill-card-icon[data-category='meta'] {
+  color: var(--green-400, #7aae66);
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--green-400, #7aae66) 35%, var(--bg-elevated)),
+    color-mix(in oklab, var(--green-400, #7aae66) 18%, var(--bg-elevated)));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--green-400, #7aae66) 22%, transparent);
+}
+.skill-card-icon[data-category='debug'] {
+  color: var(--orange-400, #e8975f);
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--orange-400, #e8975f) 35%, var(--bg-elevated)),
+    color-mix(in oklab, var(--orange-400, #e8975f) 18%, var(--bg-elevated)));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--orange-400, #e8975f) 22%, transparent);
+}
+.skill-card-icon[data-category='backend'] {
+  color: var(--accent);
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--accent) 28%, var(--bg-elevated)),
+    color-mix(in oklab, var(--accent) 14%, var(--bg-elevated)));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 18%, transparent);
+}
+.skill-card-icon[data-category='security'] {
+  color: var(--red-400, #ea7f7f);
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--red-400, #ea7f7f) 32%, var(--bg-elevated)),
+    color-mix(in oklab, var(--red-400, #ea7f7f) 16%, var(--bg-elevated)));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--red-400, #ea7f7f) 22%, transparent);
+}
+.skill-card-icon[data-category='testing'] {
+  color: var(--accent);
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--accent) 30%, var(--bg-elevated)),
+    color-mix(in oklab, var(--accent) 15%, var(--bg-elevated)));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 18%, transparent);
+}
+
+.skill-card.is-installed .skill-card-icon {
+  /* Quando instalada, a icon tile fica menos vibrante — sinaliza "já tá aí" */
+  opacity: 0.65;
+}
+
+.skill-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.skill-card-name {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.skill-card-check {
+  font-size: 11px;
+  color: var(--green-400, #7aae66);
+  flex-shrink: 0;
+}
+
+.skill-card-tagline {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.skill-card-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Install button — accent tint discreto, aparece sempre (não só no hover
+ * como o uninstall) porque é a action principal pra essa section. */
+.skill-card-install {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--accent) 22%, transparent);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+.skill-card-install:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--accent) 20%, transparent);
+  border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+}
+.skill-card-install:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.skill-card-install .codicon {
+  font-size: 11px;
+}
+
+/* Link externo (GitHub) — aparece no lugar do install quando já instalada.
+ * Ghost icon sutil, hover suave. */
+.skill-card-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  color: var(--fg-muted);
+  text-decoration: none;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.skill-card-link:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.skill-card-link .codicon {
+  font-size: 12px;
+}

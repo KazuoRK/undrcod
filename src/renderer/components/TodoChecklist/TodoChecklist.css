@@ -1,0 +1,280 @@
+/* TodoChecklist — render dedicado pra tool TodoWrite (substitui ToolCard genérico).
+ *
+ * Layout: inline na chat, card subtil em accent-soft com borda em accent 18%.
+ * Status anima via transition (color/opacity/text-decoration). Quando
+ * in_progress vira completed, a row recebe data-flash="on" por ~650ms.
+ */
+
+.todo-checklist {
+  margin: 14px 0;
+  padding: 16px 18px;
+  max-width: 720px;
+  width: fit-content;
+  min-width: 320px;
+  background: color-mix(in oklab, var(--accent) 5%, var(--bg-panel));
+  border: 1px solid color-mix(in oklab, var(--accent) 22%, transparent);
+  border-radius: var(--radius-2xl);
+  font-family: var(--font-body);
+  color: var(--fg-default, var(--fg-secondary));
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.18),
+    0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--accent) 12%, transparent);
+  /* Slide-in suave quando a checklist nasce */
+  animation: todoChecklistIn var(--duration-slow, 280ms) var(--ease-out-expo) both;
+}
+
+@keyframes todoChecklistIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* HEADER ------------------------------------------------------------------ */
+
+.todo-checklist-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in oklab, var(--accent) 14%, transparent);
+}
+
+.todo-checklist-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.todo-checklist-label::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.todo-checklist-counter {
+  font-size: 11.5px;
+  color: var(--fg-muted);
+  letter-spacing: 0.02em;
+  margin-left: auto;
+  transition: color var(--duration-base) var(--ease-out-expo);
+}
+
+.todo-checklist-counter strong {
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: color var(--duration-base) var(--ease-out-expo);
+}
+
+/* LIST -------------------------------------------------------------------- */
+
+.todo-checklist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.todo-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-lg);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--fg-default, var(--fg-secondary));
+  transition:
+    color var(--duration-base) var(--ease-out-expo),
+    background-color var(--duration-base) var(--ease-out-expo),
+    opacity var(--duration-base) var(--ease-out-expo),
+    transform var(--duration-base) var(--ease-out-expo);
+  /* Slide-in pra novas rows */
+  animation: todoRowIn var(--duration-base) var(--ease-out-expo) both;
+}
+
+@keyframes todoRowIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.todo-row:hover {
+  background: color-mix(in oklab, var(--accent) 6%, transparent);
+}
+
+/* ICONS ------------------------------------------------------------------- */
+
+.todo-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  /* Alinha ícone com a primeira linha do texto (1.5 line-height @ 13.5px ≈ 20px) */
+  margin-top: 0;
+  transition: color 200ms var(--ease-out-expo);
+}
+
+.todo-row-icon .codicon {
+  font-size: 16px;
+  transition:
+    color 200ms var(--ease-out-expo),
+    transform 200ms var(--ease-out-expo);
+}
+
+/* LABELS por status ------------------------------------------------------- */
+
+.todo-row-label {
+  flex: 1;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  transition:
+    color 200ms var(--ease-out-expo),
+    opacity 200ms var(--ease-out-expo),
+    text-decoration-color 220ms var(--ease-out-expo);
+}
+
+/* pending — texto suavemente menos saturado */
+.todo-row-pending .todo-row-icon .codicon {
+  color: var(--fg-muted);
+}
+.todo-row-pending .todo-row-label {
+  color: var(--fg-secondary);
+  opacity: 0.85;
+}
+
+/* in_progress — accent + peso, icon spinning (a regra spin vem do codicon) */
+.todo-row-in_progress .todo-row-icon .codicon {
+  color: var(--accent);
+}
+.todo-row-in_progress .todo-row-label {
+  color: var(--fg-strong);
+  font-weight: 500;
+  /* Sutil pulse pra dar sensação de movimento */
+  animation: todoLabelPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes todoLabelPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.78; }
+}
+
+/* completed — strike-through + dim + accent na icon */
+.todo-row-completed .todo-row-icon .codicon {
+  color: var(--accent);
+}
+.todo-row-completed .todo-row-label {
+  color: var(--fg-muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--fg-muted) 70%, transparent);
+  text-decoration-thickness: 1px;
+  opacity: 0.55;
+}
+
+/* FLASH on completion ----------------------------------------------------- */
+
+.todo-row[data-flash='on'] {
+  animation: todoCompleteFlash 600ms var(--ease-out-expo) both;
+}
+
+@keyframes todoCompleteFlash {
+  0% {
+    background: color-mix(in oklab, var(--accent) 14%, transparent);
+    transform: translateX(0);
+  }
+  30% {
+    background: color-mix(in oklab, var(--accent) 14%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+/* Spinner ajuste — codicon-modifier-spin já anima em vscode-codicons.
+ * Se o pacote não embute, fornece fallback. */
+.codicon.codicon-modifier-spin {
+  animation: codiconSpin 1.4s steps(12, end) infinite;
+}
+
+@keyframes codiconSpin {
+  100% { transform: rotate(360deg); }
+}
+
+/* PROGRESS BAR ------------------------------------------------------------ */
+
+.todo-checklist-progress {
+  margin-top: 10px;
+  height: 2px;
+  width: 100%;
+  background: color-mix(in oklab, var(--accent) 8%, transparent);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.todo-checklist-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 320ms var(--ease-out-expo);
+  /* Sheen sutil pra dar vida */
+  background-image: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    var(--accent-hover, var(--accent)) 50%,
+    var(--accent) 100%
+  );
+  background-size: 200% 100%;
+  animation: todoProgressShimmer 2.4s linear infinite;
+}
+
+@keyframes todoProgressShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* EMPTY STATE ------------------------------------------------------------- */
+
+.todo-checklist-empty .todo-checklist-empty-msg {
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--fg-muted);
+  padding: 4px 2px 2px;
+}
+
+/* REDUCED MOTION ---------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-checklist,
+  .todo-row,
+  .todo-row[data-flash='on'],
+  .todo-row-in_progress .todo-row-label,
+  .todo-checklist-progress-fill {
+    animation: none !important;
+    transition: none !important;
+  }
+}

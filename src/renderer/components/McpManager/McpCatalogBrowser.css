@@ -1,0 +1,729 @@
+/*
+ * McpCatalogBrowser — sub-view do McpManager. Renderiza dentro do
+ * .mcp-mgr-modal, ocupando o espaco entre o header existente e o footer.
+ *
+ * O McpManager esconde seu título e botoes do header quando o browser ta
+ * ativo (via prop), mas o backdrop/modal/footer permanecem do parent.
+ *
+ * Visual: champagne gold accent reuso de --accent. Cards no estilo dos
+ * PluginMarketplace cards mas em layout próprio (icon + body + cta col).
+ */
+
+.mcp-catalog-browser {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ============================================================
+   Header — back + title (custom do browser)
+   ============================================================ */
+.mcp-catalog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.mcp-catalog-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 5px 10px 5px 8px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--fg-secondary);
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.mcp-catalog-back:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+  border-color: var(--accent);
+}
+
+.mcp-catalog-back .codicon {
+  font-size: 14px;
+}
+
+.mcp-catalog-title {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--fg-primary);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ============================================================
+   Search
+   ============================================================ */
+.mcp-catalog-search-row {
+  padding: 14px 18px 8px 18px;
+  flex-shrink: 0;
+}
+
+.mcp-catalog-search {
+  position: relative;
+}
+
+.mcp-catalog-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--fg-muted);
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.mcp-catalog-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 11px 36px 11px 38px;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--fg-primary);
+  transition: border-color var(--duration-fast) var(--ease-out-expo),
+              box-shadow var(--duration-fast) var(--ease-out-expo);
+}
+
+.mcp-catalog-search-input::placeholder {
+  color: var(--fg-muted);
+}
+
+.mcp-catalog-search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.mcp-catalog-search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+  font-size: 12px;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.mcp-catalog-search-clear:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+/* ============================================================
+   Category chips — wrap em multiplas linhas (sem scroll horizontal feio).
+   Antes era overflow-x: auto que mostrava scrollbar 4px feia no rodape.
+   Wrap deixa os chips quebrarem naturalmente em até 2 linhas.
+   ============================================================ */
+.mcp-catalog-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 18px 12px 18px;
+  flex-shrink: 0;
+}
+
+.mcp-catalog-chip {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--fg-secondary);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.mcp-catalog-chip:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+  border-color: var(--border-strong);
+}
+
+.mcp-catalog-chip.is-active {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* ============================================================
+   Body — grid container
+   ============================================================ */
+.mcp-catalog-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 18px 16px 18px;
+}
+
+.mcp-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .mcp-catalog-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   Card
+   ============================================================ */
+.mcp-catalog-card {
+  /* Layout coluna: top (icon+title) → description (cresce) → footer (chips+btn).
+   * min-height pra cards alinharem mesmo com descrições de tamanhos diferentes. */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 180px;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  padding: 16px 18px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: transform var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo),
+              box-shadow var(--duration-fast) var(--ease-out-expo),
+              background var(--duration-fast) var(--ease-out-expo);
+}
+
+.mcp-catalog-card:hover,
+.mcp-catalog-card:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-subtle));
+  background: color-mix(in srgb, var(--bg-elevated) 92%, var(--accent) 8%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+
+.mcp-catalog-card:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent),
+              0 6px 18px rgba(0, 0, 0, 0.28);
+}
+
+/* No hover: install button vira sólido gold (chamada de açao mais forte) */
+.mcp-catalog-card:hover .mcp-catalog-install-btn,
+.mcp-catalog-card:focus-visible .mcp-catalog-install-btn {
+  background: var(--accent);
+  color: var(--bg-base);
+  border-color: var(--accent);
+}
+
+/* ---------- Top: icon + identidade ---------- */
+.mcp-catalog-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.mcp-catalog-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-size: 20px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Logo SVG do simple-icons CDN — preserva cor original da marca
+ * (GitHub gato, PostgreSQL elefante, Stripe roxo, etc).
+ * Antes a gente tingia tudo de dourado, perdendo identidade visual.
+ * Agora as marcas trazem suas cores próprias e o card fica mais rico. */
+.mcp-catalog-logo-img {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+  display: block;
+}
+
+.mcp-catalog-card-titlewrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 2px;
+}
+
+.mcp-catalog-card-titlerow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mcp-catalog-card-name {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg-primary);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.mcp-catalog-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 7px 2px 5px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  line-height: 1.3;
+}
+
+.mcp-catalog-badge .codicon {
+  font-size: 10px;
+}
+
+.mcp-catalog-card-vendor {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: var(--fg-muted);
+  line-height: 1.3;
+  letter-spacing: 0.005em;
+}
+
+/* ---------- Description (flex-grow ocupa espaço, empurra footer) ---------- */
+.mcp-catalog-card-description {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--fg-secondary);
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1; /* empurra footer pra baixo, alinha cards de alturas diferentes */
+  min-height: 0;
+}
+
+/* ---------- Footer: meta inline + install btn ---------- */
+.mcp-catalog-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed color-mix(in srgb, var(--border-subtle) 80%, transparent);
+}
+
+/* Meta line: "database · STDIO · 🔑 credenciais" com separadores cinza */
+.mcp-catalog-card-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  color: var(--fg-muted);
+  letter-spacing: 0.02em;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mcp-catalog-meta-item {
+  white-space: nowrap;
+  text-transform: lowercase;
+}
+
+.mcp-catalog-meta-item.is-transport {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 9.5px;
+  color: var(--fg-muted);
+}
+
+.mcp-catalog-meta-item.is-auth {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: color-mix(in srgb, var(--accent) 70%, var(--fg-muted));
+}
+
+.mcp-catalog-meta-item.is-auth .codicon {
+  font-size: 10px;
+}
+
+.mcp-catalog-meta-sep {
+  opacity: 0.4;
+  user-select: none;
+}
+
+/* ============================================================
+   Install button (no canto direito do card)
+   ============================================================ */
+/* Install btn: sempre no rodapé direito do card, alinhado com meta line.
+ * Hover do card preenche sólido gold (chamada de açao visualmente forte). */
+.mcp-catalog-install-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  padding: 5px 12px;
+  border-radius: 7px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.mcp-catalog-install-btn .codicon {
+  font-size: 12px;
+}
+
+/* ============================================================
+   Skeleton loading
+   ============================================================ */
+.mcp-catalog-card-skeleton {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 14px;
+}
+
+.mcp-catalog-skeleton-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 9px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-base) 0%,
+    color-mix(in srgb, var(--bg-base) 80%, var(--accent) 8%) 50%,
+    var(--bg-base) 100%
+  );
+  background-size: 200% 100%;
+  animation: mcpCatalogShimmer 1.4s linear infinite;
+}
+
+.mcp-catalog-skeleton-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.mcp-catalog-skeleton-line {
+  height: 10px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--bg-base) 0%,
+    color-mix(in srgb, var(--bg-base) 80%, var(--accent) 8%) 50%,
+    var(--bg-base) 100%
+  );
+  background-size: 200% 100%;
+  animation: mcpCatalogShimmer 1.4s linear infinite;
+}
+
+.mcp-catalog-skeleton-line.is-title {
+  width: 45%;
+  height: 12px;
+}
+
+.mcp-catalog-skeleton-line.is-meta {
+  width: 30%;
+  height: 8px;
+}
+
+.mcp-catalog-skeleton-line.is-short {
+  width: 70%;
+}
+
+@keyframes mcpCatalogShimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* ============================================================
+   Empty / unavailable
+   ============================================================ */
+.mcp-catalog-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.mcp-catalog-empty-icon {
+  font-size: 32px;
+  color: var(--fg-muted);
+}
+
+.mcp-catalog-empty-title {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--fg-secondary);
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+.mcp-catalog-empty-title strong {
+  color: var(--fg-primary);
+  font-weight: 600;
+}
+
+.mcp-catalog-clear-btn {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--accent);
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.mcp-catalog-clear-btn:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent);
+}
+
+.mcp-catalog-unavailable {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.mcp-catalog-unavailable-icon {
+  font-size: 32px;
+  color: var(--fg-muted);
+}
+
+.mcp-catalog-unavailable-title {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--fg-primary);
+}
+
+.mcp-catalog-unavailable-msg {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+  max-width: 380px;
+  line-height: 1.5;
+}
+
+.mcp-catalog-fallback-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  color: var(--bg-base);
+  border: 1px solid var(--accent);
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  margin-top: 4px;
+  transition: filter var(--duration-fast) var(--ease-out-expo);
+}
+
+.mcp-catalog-fallback-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* ============================================================
+   Form header overlay — quando McpManager mostra "Adicionando: X"
+   (renderizado pelo McpManager, mas estilo vive aqui pra co-locar)
+   ============================================================ */
+.mcp-mgr-form-catalog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-elevated));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border-subtle));
+  border-radius: var(--radius-lg);
+}
+
+.mcp-mgr-form-catalog-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-size: 16px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.mcp-mgr-form-catalog-icon .mcp-catalog-logo-img {
+  width: 60%;
+  height: 60%;
+}
+
+.mcp-mgr-form-catalog-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.mcp-mgr-form-catalog-label {
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+
+.mcp-mgr-form-catalog-name {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--fg-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ============================================================
+   Botao "Procurar conectores" — adicionado no McpManager
+   ============================================================ */
+.mcp-mgr-browse-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  padding: 4px 12px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.mcp-mgr-browse-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--bg-base);
+  border-color: var(--accent);
+}
+
+.mcp-mgr-browse-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Botao "Procurar conectores" grande no empty state */
+.mcp-mgr-empty .mcp-mgr-browse-btn {
+  padding: 8px 18px;
+  font-size: var(--text-sm);
+  margin-top: 12px;
+}
+
+/* ============================================================
+   Auth fields section (renderizado pelo McpManager form)
+   ============================================================ */
+.mcp-mgr-auth-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent) 4%, var(--bg-base));
+  border: 1px solid var(--border-subtle);
+}
+
+.mcp-mgr-auth-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--fg-primary);
+}
+
+.mcp-mgr-auth-section-title .codicon {
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.mcp-mgr-auth-required {
+  color: #e25555;
+  margin-left: 2px;
+}

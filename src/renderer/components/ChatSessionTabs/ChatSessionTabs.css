@@ -1,0 +1,209 @@
+/*
+ * ChatSessionTabs — tab bar no topo do ChatView (pane-right).
+ * Estilo alinhado com CentralTabs/chatview-toolbar pra manter cohesão visual.
+ */
+
+.chat-session-tabs {
+  display: flex;
+  align-items: stretch;
+  height: var(--pane-topbar-height);
+  background: var(--pane-topbar-bg);
+  border-bottom: var(--pane-topbar-border);
+  flex-shrink: 0;
+  min-width: 0;
+  /* Anchor pro thumb overlay (sibling, não filho do scroll container — senão
+   * scrolla junto com as tabs e visual fica congelado). */
+  position: relative;
+}
+
+.chat-session-tabs-scroll {
+  display: flex;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative; /* anchor pro thumb absolute */
+  /* Firefox — esconde scrollbar nativa total. Custom thumb cuida do visual. */
+  scrollbar-width: none;
+}
+
+/* Webkit — esconde scrollbar nativa COMPLETAMENTE. O custom thumb (.chat-session-tabs-thumb)
+ * faz o trabalho visual via position:absolute, NÃO ocupando layout space.
+ * Especificidade boost (.chat-session-tabs .chat-session-tabs-scroll) pra
+ * vencer o `*::-webkit-scrollbar` !important do global. */
+.chat-session-tabs .chat-session-tabs-scroll::-webkit-scrollbar {
+  display: none !important;
+  height: 0 !important;
+  width: 0 !important;
+}
+
+/* Thumb visual fica em <OverlayScrollbar> (componente compartilhado).
+ * Aqui só precisamos da classe `.has-overlay-scrollbar` no parent — adicionada
+ * no TSX — que ativa o fade-in/out via CSS do componente. */
+
+/* Cursor pattern: tabs flat, sem border-bottom accent. Ativo distingue só
+ * por bg + cor do texto. Icon sempre muted (não vira accent no ativo). */
+.chat-session-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px 0 10px;
+  cursor: pointer;
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  min-width: 0;
+  max-width: 200px;
+  background: transparent;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+  flex-shrink: 0;
+}
+
+.chat-session-tab:hover {
+  background: color-mix(in oklab, var(--bg-elevated) 60%, transparent);
+  color: var(--fg-secondary);
+}
+
+.chat-session-tab.is-active {
+  background: var(--bg-card);
+  color: var(--fg-primary);
+  border-bottom: 1px solid var(--accent);
+  margin-bottom: -1px;
+}
+
+/* Keyboard a11y — Tab key navigation gets visible focus ring. */
+.chat-session-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.chat-session-tabs-new:focus-visible,
+.chat-session-tabs-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  color: var(--fg-primary);
+}
+.chat-session-tab-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  opacity: 1;
+}
+
+.chat-session-tab-icon {
+  font-size: 13px;
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+.chat-session-tab.is-active .chat-session-tab-icon {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.chat-session-tab-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.chat-session-tab-rename-input {
+  background: var(--bg-input, var(--bg-elevated));
+  color: var(--fg-primary);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 1px 4px;
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  max-width: 160px;
+  min-width: 80px;
+}
+
+/* Close X: invisível no idle, aparece no hover. No ativo fica sempre visível
+ * (Cursor pattern — user precisa fechar o que está vendo sem hunt). */
+.chat-session-tab-close {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out-expo),
+              background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.chat-session-tab:hover .chat-session-tab-close {
+  opacity: 0.7;
+}
+.chat-session-tab.is-active .chat-session-tab-close {
+  opacity: 0.9;
+}
+
+.chat-session-tab-close:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+  opacity: 1;
+}
+
+.chat-session-tab-close .codicon {
+  font-size: 12px;
+}
+
+.chat-session-tabs-new {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  width: 32px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.chat-session-tabs-new:hover {
+  background: color-mix(in oklab, var(--bg-elevated) 60%, transparent);
+  color: var(--fg-primary);
+}
+
+.chat-session-tabs-new .codicon {
+  font-size: 14px;
+}
+
+/* Trailing actions (history clock + overflow ellipsis) — mesmo footprint do
+ * "+" pra ler como conjunto. Sem border-left no clock (já vem após o "+"
+ * que tem). O ellipsis ganha border-left pra fechar o conjunto à direita. */
+.chat-session-tabs-action {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  width: 28px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.chat-session-tabs-action:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.chat-session-tabs-action .codicon {
+  font-size: 13px;
+}

@@ -1,0 +1,301 @@
+/*
+ * FilePreview — painel central que mostra conteúdo de arquivo clicado.
+ * Posição: entre FileTree e ChatView no main-content.
+ */
+
+.file-preview {
+  flex: 1.2;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: transparent;        /* herda do .pane-mid-editor card (var(--bg-card)) */
+  min-height: 0;
+}
+
+.file-preview-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-2) 0 var(--space-3);
+  background: var(--editor-bg); /* tab bar level */
+  border-bottom: 1px solid var(--editor-canvas);
+  gap: var(--space-2);
+  min-height: 35px;
+}
+/* Active tab indicator (linha laranja UNDRCOD em cima, VS Code usa blue) */
+.file-preview-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  height: 1px;
+  background: var(--accent);
+  width: 220px;
+  pointer-events: none;
+}
+.file-preview {
+  position: relative;
+}
+
+.file-preview-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.file-preview-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.file-preview-path {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* só último segmento em destaque (resto fica em meta) */
+}
+
+.file-preview-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: 1;
+}
+
+.file-preview-bc-seg-wrap {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.file-preview-bc-seg {
+  background: transparent;
+  border: 0;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1;
+  color: var(--fg-muted);
+  cursor: default;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.file-preview-bc-seg.is-folder {
+  cursor: pointer;
+}
+
+.file-preview-bc-seg.is-folder:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+  color: var(--fg-primary);
+}
+
+.file-preview-bc-seg.is-folder:focus-visible {
+  outline: 2px solid var(--border-focus, var(--accent));
+  outline-offset: 1px;
+}
+
+.file-preview-bc-seg.is-file {
+  color: var(--fg-primary);
+  font-weight: 500;
+}
+
+.file-preview-bc-sep {
+  font-size: 12px;
+  color: var(--fg-muted);
+  opacity: 0.6;
+  margin: 0 -1px;
+  flex-shrink: 0;
+}
+
+.file-preview-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.file-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+/* === Markdown view-mode segmented (Edit/Split/Preview) === */
+.file-preview-md-mode {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+.file-preview-md-mode-btn {
+  background: transparent;
+  border: 0;
+  color: var(--fg-muted);
+  padding: 4px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition: background-color 0.12s, color 0.12s;
+}
+.file-preview-md-mode-btn + .file-preview-md-mode-btn {
+  border-left: 1px solid var(--border-subtle);
+}
+.file-preview-md-mode-btn:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+  color: var(--fg-primary);
+}
+.file-preview-md-mode-btn.is-active {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+.file-preview-md-mode-btn.is-active:hover {
+  background: var(--accent);
+}
+.file-preview-md-mode-btn .codicon {
+  font-size: 13px;
+}
+
+/* === Markdown split layout === */
+.file-preview-md-split {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+.file-preview-md-split-pane {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.file-preview-md-split-pane.is-preview {
+  background: var(--bg-secondary, var(--bg-panel));
+  overflow: auto;
+}
+.file-preview-md-split-divider {
+  width: 1px;
+  background: var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.file-preview-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg-muted);
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  line-height: 1;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+.file-preview-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+  border-color: var(--border-subtle);
+}
+.file-preview-btn:hover:first-child {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+/* Toggle ativo (ex: Preview ligado em .md) — destaca em accent pra sinalizar estado. */
+.file-preview-btn.is-active {
+  background: var(--bg-elevated);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.file-preview-close {
+  font-size: var(--text-base);
+  padding: 0 8px;
+}
+
+.file-preview-body {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Quando MonacoEditor renderiza dentro do body, ele cuida do scroll próprio
+ * — desligamos overflow do body pra não ter scrollbar duplo. */
+.file-preview-body:has(.monaco-editor-wrap) {
+  overflow: hidden;
+}
+
+.file-preview-loading,
+.file-preview-binary {
+  padding: var(--space-5);
+  text-align: center;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.file-preview-error {
+  margin: var(--space-3);
+  padding: var(--space-3);
+  background: color-mix(in oklab, var(--red) 8%, transparent);
+  border: 1px solid color-mix(in oklab, var(--red) 28%, transparent);
+  border-radius: var(--radius-lg);
+  color: var(--red);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.file-preview-image-wrap {
+  padding: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-preview-image {
+  max-width: 100%;
+  max-height: calc(100vh - 200px);
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+}
+
+/* file-preview-code é também .language-X (Prism), CSS do prism-undrcod.css aplica */
+.file-preview-code {
+  margin: 0;
+  font-family: var(--font-mono);
+  white-space: pre;
+  overflow: visible;
+}
+.file-preview-code code {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  font-size: inherit;
+}

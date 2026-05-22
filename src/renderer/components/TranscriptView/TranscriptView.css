@@ -1,0 +1,193 @@
+/*
+ * TranscriptView — popover "Visualizacao de transcrição" Antigravity-style.
+ */
+
+.transcript-view-popover {
+  position: fixed;
+  z-index: 1000;
+  min-width: 260px;
+  /* Mesmo padrão visual do ComposerPopover (bg-elevated + radius-2xl + sombra)
+   * pra manter consistência com os outros menus suspensos do app. */
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: transcriptViewFadeIn var(--duration-fast) var(--ease-out-expo);
+}
+
+@keyframes transcriptViewFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.transcript-view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.transcript-view-title {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--fg-primary);
+  font-weight: 500;
+}
+
+/*
+ * Shortcut chips vivem em global.css (.kbd / .kbd-row).
+ * .transcript-view-shortcut / .transcript-view-kbd são aliases la.
+ * Não duplicar aqui.
+ */
+
+.transcript-view-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.transcript-view-mode {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--fg-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  text-align: left;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.transcript-view-mode:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+
+.transcript-view-mode.is-active {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+
+.transcript-view-mode .codicon {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-top: 2px; /* alinha com a baseline do label, ignora desc */
+  flex-shrink: 0;
+}
+
+.transcript-view-mode.is-active .codicon {
+  opacity: 1;
+  color: var(--accent);
+}
+
+/* Coluna de texto: label em cima + descrição embaixo (2 linhas total).
+ * Limita a width pra description quebrar bonito e não esticar o popover. */
+.transcript-view-mode-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: 240px;
+}
+
+.transcript-view-mode-label {
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.transcript-view-mode-desc {
+  font-size: 11px;
+  color: var(--fg-muted);
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+
+.transcript-view-mode.is-active .transcript-view-mode-desc {
+  color: var(--fg-secondary);
+}
+
+.transcript-view-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 0 4px;
+}
+
+.transcript-view-font-sizes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.transcript-view-font-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 7px 0;
+  border: none;
+  /* Um step mais escuro que o popover (--bg-elevated) pra ficar "inset"
+   * e dar contraste — antes era igual ao bg do popover quando este era panel. */
+  background: var(--bg-panel);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  line-height: 1;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.transcript-view-font-btn:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+
+.transcript-view-font-btn.is-active {
+  background: var(--accent);
+  color: var(--fg-on-accent, #fff);
+}
+
+/* "Aa" no tamanho real do font, sublabel pequeno e fixo */
+.transcript-view-font-aa {
+  font-weight: 500;
+  line-height: 1;
+}
+
+.transcript-view-font-sublabel {
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  line-height: 1;
+}
+
+/* Font size variants — aplicam só no .transcript-view-font-aa pra sublabel ficar fixo */
+.transcript-view-font-sm .transcript-view-font-aa {
+  font-size: 12px;
+}
+
+.transcript-view-font-md .transcript-view-font-aa {
+  font-size: 15px;
+}
+
+.transcript-view-font-lg .transcript-view-font-aa {
+  font-size: 18px;
+}

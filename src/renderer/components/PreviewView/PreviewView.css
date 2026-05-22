@@ -1,0 +1,4894 @@
+/*
+ * PreviewView — modo Lovable: dev server embedado via Electron <webview>.
+ * Toolbar Chrome-like com back/forward/refresh/url/external + botões
+ * Cursor-style (inspect, terminal, inspector panel).
+ */
+
+.preview-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-base);
+  overflow: hidden;
+}
+
+/* === Toolbar superior === */
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 6px 8px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.preview-toolbar > .preview-btn {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+/* Menu aberto: overlay invisível por cima do webview captura clicks que o
+   `<webview>` (BrowserView nativo Electron) normalmente intercepta. Sem
+   isso, clicks dentro do webview ficam presos e o menu não fecha. */
+.preview-menu-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: transparent;
+  cursor: default;
+}
+
+/* Zoom controls — replica Cursor IG0 (− [100%] +) */
+.preview-zoom-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  margin: 0 4px;
+  padding: 2px;
+  border-radius: 4px;
+  background: var(--bg-input);
+}
+.preview-zoom-btn {
+  width: 22px !important;
+  height: 22px !important;
+  padding: 0 !important;
+  border-radius: 3px !important;
+}
+.preview-zoom-btn .codicon {
+  font-size: 12px;
+}
+.preview-zoom-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 22px;
+  padding: 0 4px;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: var(--fg-default);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+.preview-zoom-label:hover:not(:disabled) {
+  background: var(--bg-hover-dropdown);
+}
+.preview-zoom-label:disabled {
+  cursor: default;
+}
+
+.preview-btn {
+  background: transparent;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  color: var(--fg-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.preview-btn .codicon {
+  font-size: 14px;
+}
+.preview-btn.is-loading .codicon {
+  color: var(--accent);
+}
+.preview-btn.is-active {
+  background: var(--bg-elevated);
+  color: var(--accent);
+}
+.preview-btn-sm {
+  width: 22px;
+  height: 22px;
+}
+.preview-btn-sm .codicon {
+  font-size: 12px;
+}
+
+.preview-url-form {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+.preview-url-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 5px 10px;
+  color: var(--fg-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-url-input:focus {
+  border-color: var(--accent);
+}
+.preview-url-input::placeholder {
+  color: var(--fg-muted);
+}
+
+/* === Body: main (preview + terminal opcional) | inspector === */
+.preview-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.preview-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* === Content area (webview) === */
+.preview-content {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  position: relative;
+  background: #fff;
+}
+.preview-webview {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: flex;
+}
+
+/* Loading state enquanto getPreviewPreload IPC resolve (~50ms) */
+.preview-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  background: var(--bg-base);
+}
+
+/* === Terminal embedado === */
+.preview-terminal-pane {
+  flex-shrink: 0;
+  height: 240px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-base);
+  border-top: 1px solid var(--border-subtle);
+}
+.preview-terminal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.preview-terminal-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.preview-terminal-title .codicon {
+  font-size: 13px;
+}
+.preview-terminal-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* === Inspector panel (right sidebar) === */
+.preview-inspector {
+  flex-shrink: 0;
+  /* width controlado via style inline (drag do divider). default 340px. */
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border-subtle);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.preview-inspector-section {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  max-height: 200px;
+  display: flex;
+  flex-direction: column;
+}
+.preview-inspector-section-title {
+  padding: 8px 12px 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.preview-inspector-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 6px;
+}
+.preview-inspector-node {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  color: var(--fg-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+.preview-inspector-node:hover {
+  background: var(--bg-elevated);
+}
+.preview-inspector-node.is-active {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+.preview-inspector-node-icon {
+  font-size: 10px !important;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.preview-inspector-empty {
+  padding: 12px;
+  color: var(--fg-muted);
+  font-size: 11px;
+  font-style: italic;
+}
+
+.preview-inspector-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.preview-inspector-tabs-spacer {
+  flex: 1;
+}
+.preview-inspector-action {
+  background: transparent;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  color: var(--fg-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-inspector-action:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.preview-inspector-action .codicon {
+  font-size: 13px;
+}
+.preview-inspector-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.preview-inspector-action:disabled:hover {
+  background: transparent;
+  color: var(--fg-muted);
+}
+
+/* Wrapper relative pro popover anchor */
+.preview-inspector-edits-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Contador de edits pendentes (estilo Cursor "N Edits") — agora button */
+.preview-inspector-edits-count {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  margin-right: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  cursor: pointer;
+  transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+}
+.preview-inspector-edits-count:hover,
+.preview-inspector-edits-count[aria-expanded="true"] {
+  background: var(--bg-active);
+  color: var(--fg-default);
+  border-color: var(--border-subtle);
+}
+
+/* Popover "N CHANGES" — diff list de pending edits (Cursor cs0 pattern). */
+.preview-edits-popover {
+  /* position: fixed pra escapar overflow:hidden de containers pais (panel design,
+   * sidebar inspector, etc). top/right computados em JS via getBoundingClientRect
+   * do botão âncora (useLayoutEffect em EditsPopover). z-index alto pra ficar
+   * sobre tudo do inspector. */
+  position: fixed;
+  z-index: 9999;
+  width: 360px;
+  max-height: 480px;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--fg-default);
+}
+.preview-edits-popover-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.preview-edits-popover-group {
+  padding-top: 8px;
+}
+.preview-edits-popover-group + .preview-edits-popover-group {
+  margin-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+.preview-edits-popover-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.preview-edits-popover-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11.5px;
+}
+.preview-edits-popover-prop {
+  color: var(--fg-muted);
+  font-weight: 500;
+}
+.preview-edits-popover-values {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-left: 12px;
+}
+.preview-edits-popover-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.preview-edits-popover-old {
+  color: var(--fg-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--fg-muted);
+}
+.preview-edits-popover-arrow {
+  color: var(--fg-muted);
+  margin: 0 2px;
+}
+.preview-edits-popover-new {
+  color: var(--fg-default);
+  font-weight: 600;
+}
+.preview-edits-popover-element {
+  margin-top: 10px;
+  padding: 8px;
+  background: var(--bg-input);
+  border-radius: 4px;
+}
+.preview-edits-popover-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.preview-edits-popover-selector {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--fg-default);
+  word-break: break-all;
+  display: block;
+}
+
+/* Actions footer — Send to chat + Copy CSS */
+.preview-edits-popover-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+.preview-edits-popover-action {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--fg-default);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+.preview-edits-popover-action:hover {
+  background: var(--bg-active);
+  border-color: var(--fg-muted);
+}
+.preview-edits-popover-action--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.preview-edits-popover-action--primary:hover {
+  background: var(--accent);
+  filter: brightness(1.1);
+  border-color: var(--accent);
+}
+.preview-edits-popover-action .codicon {
+  font-size: 13px;
+}
+
+/* Apply button — proeminente azul (estilo Cursor primary action button).
+   Replica .browser-pending-changes-button do Cursor (variant primary). */
+.preview-inspector-apply {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0 12px;
+  margin-left: 4px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  outline: none;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              transform var(--duration-fast) var(--ease-out-expo),
+              opacity var(--duration-fast) var(--ease-out-expo);
+}
+.preview-inspector-apply:hover:not(:disabled) {
+  background: var(--accent-600, var(--accent));
+  transform: translateY(-0.5px);
+}
+.preview-inspector-apply:active:not(:disabled) {
+  transform: translateY(0.5px);
+}
+.preview-inspector-apply:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.preview-inspector-tab {
+  background: transparent;
+  border: none;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-inspector-tab:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.preview-inspector-tab.is-active {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.preview-inspector-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.preview-inspector-footer {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-muted);
+}
+.preview-inspector-footer-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 8px;
+}
+.preview-inspector-footer-rect {
+  flex-shrink: 0;
+  color: var(--fg-secondary);
+}
+.preview-inspector-footer-multi {
+  flex-shrink: 0;
+  margin-right: 8px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: default;
+}
+
+/* === Design tab === */
+.preview-design {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.preview-design-group {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+}
+/* Alinhado com .css-section-title (Cursor padrão): 12px 600 normal case foreground */
+.preview-design-group-title {
+  padding: 0 var(--space-3) 8px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fg-default);
+}
+
+/* Section header clicável — colapsa/expande seção. */
+.preview-section-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-section-header:hover {
+  color: var(--fg-primary);
+}
+.preview-section-header .codicon {
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+.preview-design-group.is-collapsed {
+  padding-bottom: 4px;
+}
+
+/* Header com title + edit-sides toggle (padding/margin section) */
+.preview-design-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px 4px;
+}
+.preview-design-group-header .preview-design-group-title {
+  padding: 0;
+}
+.preview-side-toggle {
+  background: transparent;
+  border: none;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  color: var(--fg-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-side-toggle:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.preview-side-toggle.is-active {
+  color: var(--accent);
+  background: var(--bg-elevated);
+}
+
+/* SideEditor grid — 2 columns x (1 row symmetric OR 2 rows individual) */
+.preview-side-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 0 12px;
+}
+
+/* SideInput — icon left + NumberInput right, all in one bg */
+.preview-side-input {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid transparent;
+  transition: border-color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-side-input:focus-within {
+  border-color: var(--accent);
+}
+.preview-side-input-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+.preview-side-input-icon svg {
+  display: block;
+}
+/* NumberInput dentro do SideInput: remove bg/border próprios (já tem no parent) */
+.preview-side-input .preview-num-input {
+  border: none;
+  background: transparent;
+  min-width: 0;
+  flex: 1;
+}
+.preview-side-input .preview-num-input-field {
+  text-align: left;
+}
+
+/* Extras (Clip content / Border box checkboxes) */
+.preview-side-extras {
+  padding: 8px 12px 4px;
+}
+.preview-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--fg-secondary);
+  font-family: var(--font-body);
+  font-size: 11px;
+  user-select: none;
+}
+.preview-checkbox input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+.preview-checkbox:hover {
+  color: var(--fg-primary);
+}
+.preview-design-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.preview-design-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* Row editável — input inline transparente, vira "destacado" no hover/focus. */
+.preview-design-row-edit {
+  padding: 2px 12px;
+}
+.preview-design-row-input-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-end;
+}
+.preview-design-row-input-wrap.is-truncate {
+  max-width: 160px;
+}
+/* Fix nativo do <select> (font-weight legacy): ver nota em
+ * .css-effects-type-select option — força tokens UNDRCOD nas <option>.
+ * !important pra vencer UA stylesheet (Chromium Windows pinta azul system
+ * em :checked apesar do override fraco). */
+.preview-design-row-input {
+  color-scheme: dark;
+  accent-color: var(--bg-active);
+}
+.preview-design-row-input option {
+  background: var(--bg-elevated) !important;
+  background-color: var(--bg-elevated) !important;
+  color: var(--fg-primary) !important;
+}
+.preview-design-row-input option:checked,
+.preview-design-row-input option:hover,
+.preview-design-row-input option:focus {
+  background: var(--bg-active) !important;
+  background-color: var(--bg-active) !important;
+  color: var(--fg-primary) !important;
+  box-shadow: 0 0 10px 100px var(--bg-active) inset !important;
+}
+.preview-design-input {
+  flex: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  color: var(--fg-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: right;
+  outline: none;
+  min-width: 0;
+  width: 100%;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-design-input:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-subtle);
+}
+.preview-design-input:focus {
+  background: var(--bg-base);
+  border-color: var(--accent);
+  text-align: left;
+}
+.preview-design-row-label {
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+/* Draggable label: cursor ew-resize ao hover, indica que pode arrastar.
+ * Espelha Cursor (css-input-label-draggable). User clica e arrasta horizontal
+ * pra ajustar valor numérico. */
+.preview-draggable-label {
+  cursor: ew-resize;
+  user-select: none;
+  transition: color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-draggable-label:hover {
+  color: var(--fg-primary);
+}
+.preview-design-row-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-primary);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.preview-design-row-value.is-truncate {
+  max-width: 140px;
+}
+.preview-design-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+/* Quad TRBL — padding/margin (read-only e editável) */
+.preview-design-four,
+.preview-design-four-edit {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 2px 12px 4px;
+}
+.preview-design-four span {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 4px 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-secondary);
+}
+.preview-design-quad-input {
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 4px 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-secondary);
+  outline: none;
+  width: 100%;
+  min-width: 0;
+  transition: border-color var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-design-quad-input:hover {
+  color: var(--fg-primary);
+  border-color: var(--border-subtle);
+}
+.preview-design-quad-input:focus {
+  background: var(--bg-base);
+  border-color: var(--accent);
+  color: var(--fg-primary);
+}
+
+/* === Position section (X/Y/Z + rotation + flip buttons) === */
+.preview-position-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+  padding: 0 12px 4px;
+}
+.preview-position-row-rot {
+  grid-template-columns: 1fr auto auto auto;
+  padding-top: 4px;
+}
+.preview-position-input {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: border-color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-position-input:focus-within {
+  border-color: var(--accent);
+}
+.preview-position-input-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.preview-position-input-field {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 3px 6px;
+  color: var(--fg-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+  min-width: 0;
+  width: 100%;
+  text-align: right;
+}
+.preview-position-input .preview-num-input {
+  border: none;
+  background: transparent;
+  min-width: 0;
+  flex: 1;
+}
+.preview-position-rot {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex: 1;
+}
+.preview-position-rot:focus-within {
+  border-color: var(--accent);
+}
+.preview-position-rot-icon {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+.preview-position-rot .preview-num-input {
+  border: none;
+  background: transparent;
+  min-width: 0;
+  flex: 1;
+}
+.preview-position-rot-suffix {
+  display: inline-flex;
+  align-items: center;
+  padding-right: 8px;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.preview-position-btn {
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-position-btn:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+/* Tap feedback no :active — flash de borda accent que volta em ~150ms.
+ * Compensa a falta de toggle state persistente (one-shot actions). */
+.preview-position-btn:active {
+  background: var(--bg-active);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: scale(0.95);
+}
+
+/* === NumberInput (input + unit dropdown) === */
+.preview-num-input {
+  display: inline-flex;
+  align-items: stretch;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  min-width: 100px;
+  transition: border-color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-num-input:focus-within {
+  border-color: var(--accent);
+}
+.preview-num-input-field {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 3px 6px;
+  color: var(--fg-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+  min-width: 0;
+  width: 100%;
+}
+.preview-num-input-field:disabled {
+  color: var(--fg-muted);
+}
+.preview-num-input-unit {
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--border-subtle);
+  padding: 0 4px;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  outline: none;
+  cursor: pointer;
+  text-align: center;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--fg-muted) 50%),
+                    linear-gradient(135deg, var(--fg-muted) 50%, transparent 50%);
+  background-position: calc(100% - 8px) 50%, calc(100% - 4px) 50%;
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+  padding-right: 14px;
+}
+.preview-num-input-unit {
+  color-scheme: dark;
+  accent-color: var(--bg-active);
+}
+.preview-num-input-unit option {
+  background: var(--bg-elevated) !important;
+  background-color: var(--bg-elevated) !important;
+  color: var(--fg-primary) !important;
+}
+.preview-num-input-unit option:checked,
+.preview-num-input-unit option:hover,
+.preview-num-input-unit option:focus {
+  background: var(--bg-active) !important;
+  background-color: var(--bg-active) !important;
+  color: var(--fg-primary) !important;
+  box-shadow: 0 0 10px 100px var(--bg-active) inset !important;
+}
+
+/* === Layered Color Section (Background/Border/Shadow stack) === */
+.preview-layered-section {
+  padding-bottom: 8px;
+}
+.preview-layered-actions,
+.preview-stroke-actions {
+  display: inline-flex;
+  gap: 2px;
+}
+.preview-layered-type {
+  position: relative;
+  margin: 0 12px 4px;
+}
+.preview-layered-type-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: 11px;
+  cursor: pointer;
+}
+.preview-layered-type-btn:hover {
+  border-color: var(--border-subtle);
+}
+.preview-layered-type-btn .codicon {
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+.preview-layered-type-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.preview-layered-type-item {
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  text-align: left;
+  font-size: 11px;
+  color: var(--fg-secondary);
+  cursor: pointer;
+}
+.preview-layered-type-item:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+.preview-layered-type-item.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Layer row (swatch + hex + alpha + eye + remove) */
+.preview-layer-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 12px;
+  padding: 2px 6px;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  position: relative;
+  transition: opacity var(--duration-fast) var(--ease-out-expo);
+}
+.preview-layer-row.is-hidden {
+  opacity: 0.4;
+}
+.preview-layer-row .preview-color-native {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  opacity: 0;
+  cursor: pointer;
+  left: 6px;
+}
+.preview-layer-row .preview-color-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  background-image:
+    linear-gradient(45deg, #888 25%, transparent 25%),
+    linear-gradient(-45deg, #888 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #888 75%),
+    linear-gradient(-45deg, transparent 75%, #888 75%);
+  background-size: 6px 6px;
+  background-position: 0 0, 0 3px, 3px -3px, -3px 0;
+}
+.preview-layer-row .preview-color-hex {
+  flex: 1;
+  min-width: 0;
+  width: 70px;
+  background: transparent;
+  border: none;
+  padding: 2px 4px;
+  color: var(--fg-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+}
+.preview-layer-row .preview-color-alpha {
+  width: 36px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--border-subtle);
+  padding: 2px 4px;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  outline: none;
+  text-align: center;
+}
+.preview-layer-eye,
+.preview-layer-remove {
+  background: transparent;
+  border: none;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-layer-eye:hover,
+.preview-layer-remove:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+.preview-layer-eye .codicon,
+.preview-layer-remove .codicon {
+  font-size: 12px;
+}
+
+/* === Effects Section (layered shadows/blurs com type dropdown) === */
+.preview-effects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 12px;
+  margin-bottom: 4px;
+}
+.preview-effect-layer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+}
+.preview-effect-type {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+.preview-effect-type-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-active);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: 11px;
+  cursor: pointer;
+}
+.preview-effect-type-btn:hover {
+  border-color: var(--accent);
+}
+.preview-effect-type-btn .codicon {
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+.preview-effect-type-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 24px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.preview-effect-type-item {
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  text-align: left;
+  font-size: 11px;
+  color: var(--fg-secondary);
+  cursor: pointer;
+}
+.preview-effect-type-item:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+.preview-effect-type-item.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+.preview-effect-value {
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+  color: var(--fg-primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.preview-effect-value:focus {
+  border-color: var(--accent);
+}
+
+/* === Gradient Editor (linear/radial com stops arrastáveis) === */
+.preview-gradient-editor {
+  margin: 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* Barra preview do gradient */
+.preview-gradient-bar {
+  position: relative;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  cursor: copy;
+  background-image:
+    linear-gradient(45deg, #888 25%, transparent 25%),
+    linear-gradient(-45deg, #888 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #888 75%),
+    linear-gradient(-45deg, transparent 75%, #888 75%);
+  background-size: 6px 6px;
+  background-position: 0 0, 0 3px, 3px -3px, -3px 0;
+}
+/* Handle de stop (triângulo apontando pra cima) */
+.preview-gradient-stop-handle {
+  position: absolute;
+  bottom: -10px;
+  width: 12px;
+  height: 16px;
+  margin-left: -6px;
+  border: 2px solid #fff;
+  border-radius: 50% 50% 0 0 / 60% 60% 0 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: ew-resize;
+  padding: 0;
+  outline: none;
+  transition: transform var(--duration-fast) var(--ease-out-expo);
+}
+.preview-gradient-stop-handle:hover {
+  transform: translateY(-2px);
+}
+.preview-gradient-stop-handle.selected {
+  border-color: var(--accent);
+  z-index: 2;
+}
+
+/* Stop editor row */
+.preview-gradient-stop-edit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  position: relative;
+  margin-top: 8px;
+}
+.preview-gradient-stop-edit .preview-color-native {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  opacity: 0;
+  cursor: pointer;
+  left: 4px;
+  z-index: 1;
+}
+.preview-gradient-stop-edit .preview-color-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.preview-gradient-stop-edit .preview-color-hex {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  padding: 2px 4px;
+  color: var(--fg-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+}
+.preview-gradient-pos {
+  width: 36px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--border-subtle);
+  padding: 2px 4px;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  outline: none;
+  text-align: center;
+  appearance: textfield;
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+}
+.preview-gradient-pos::-webkit-outer-spin-button,
+.preview-gradient-pos::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+.preview-gradient-pos-suffix {
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding-right: 4px;
+}
+
+/* Action buttons (add stop + reverse) */
+.preview-gradient-actions {
+  display: flex;
+  gap: 4px;
+}
+.preview-gradient-add-stop,
+.preview-gradient-reverse {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--fg-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-gradient-add-stop:hover,
+.preview-gradient-reverse:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+.preview-gradient-add-stop .codicon,
+.preview-gradient-reverse .codicon {
+  font-size: 12px;
+}
+
+/* === Radius section (per-corner toggle) === */
+.preview-radius-input {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.preview-radius-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  flex: 1;
+}
+.preview-radius-grid .preview-num-input {
+  min-width: 0;
+}
+
+/* === Font picker (dropdown com lista de fontes) === */
+.preview-font-picker {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.preview-font-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-font-picker-trigger:hover {
+  border-color: var(--border-subtle);
+}
+.preview-font-picker-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.preview-font-picker-trigger .codicon {
+  font-size: 11px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+.preview-font-picker-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 220px;
+  max-height: 280px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.preview-font-picker-search {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 8px 10px;
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: 11px;
+  outline: none;
+}
+.preview-font-picker-list {
+  flex: 1;
+  overflow-y: auto;
+}
+.preview-font-picker-item {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  color: var(--fg-secondary);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+.preview-font-picker-item:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+.preview-font-picker-item.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* === Color Token chip (var(--x) / Tailwind bg-[#x]) === */
+.preview-color-token-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+  min-width: 0;
+  transition: border-color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-color-token-input:hover {
+  border-color: var(--border-subtle);
+}
+.preview-color-token-name {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.preview-color-token-unlink {
+  background: transparent;
+  border: none;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-color-token-unlink:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+.preview-color-token-unlink .codicon {
+  font-size: 11px;
+}
+
+/* === Color picker row === */
+.preview-color-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  min-width: 160px;
+  transition: border-color var(--duration-fast) var(--ease-out-expo);
+  position: relative;
+}
+.preview-color-input:focus-within {
+  border-color: var(--accent);
+}
+.preview-color-native {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  opacity: 0;
+  cursor: pointer;
+  left: 4px;
+  z-index: 1;
+}
+.preview-color-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  background-image:
+    linear-gradient(45deg, #888 25%, transparent 25%),
+    linear-gradient(-45deg, #888 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #888 75%),
+    linear-gradient(-45deg, transparent 75%, #888 75%);
+  background-size: 6px 6px;
+  background-position: 0 0, 0 3px, 3px -3px, -3px 0;
+  pointer-events: none;
+}
+.preview-color-hex {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 2px 4px;
+  color: var(--fg-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+  min-width: 0;
+  width: 70px;
+  text-transform: lowercase;
+}
+.preview-color-alpha {
+  width: 36px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--border-subtle);
+  padding: 2px 4px;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  outline: none;
+  text-align: center;
+}
+
+/* === Layout Flow buttons (4 grandes) === */
+.preview-flow-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 4px 12px;
+}
+.preview-flow-btn {
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 8px 0;
+  color: var(--fg-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-flow-btn:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+.preview-flow-btn.is-active {
+  background: var(--bg-active);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.preview-flow-btn .codicon,
+.preview-flow-btn svg {
+  font-size: 16px;
+  pointer-events: none;
+}
+.preview-flow-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* === Quad wrap (padding/margin individual sides) === */
+.preview-design-quad {
+  display: flex;
+}
+
+/* Advanced row: add custom CSS property */
+.preview-design-advanced {
+  display: flex;
+  gap: 4px;
+  padding: 4px 12px 8px;
+  align-items: center;
+}
+.preview-design-advanced-prop,
+.preview-design-advanced-val {
+  flex: 1;
+  text-align: left !important;
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-subtle) !important;
+  min-width: 0;
+}
+.preview-design-advanced-prop {
+  max-width: 110px;
+}
+.preview-design-advanced-add {
+  width: 22px;
+  height: 22px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--fg-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-design-advanced-add:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.preview-design-advanced-add:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.preview-design-advanced-add .codicon {
+  font-size: 12px;
+}
+
+/* Align buttons (justify-content / align-items quick toggles) */
+.preview-design-align-row {
+  padding: 4px 12px;
+}
+.preview-design-align-buttons {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+.preview-design-align-btn {
+  background: transparent;
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.preview-design-align-btn:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+.preview-design-align-btn.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+.preview-design-align-btn .codicon {
+  font-size: 12px;
+}
+.preview-design-align-btn.is-rotated .codicon {
+  transform: rotate(90deg);
+}
+
+/* === CSS tab === */
+.preview-css {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 8px;
+}
+.preview-css-row {
+  display: flex;
+  gap: 12px;
+  padding: 3px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.preview-css-row:hover {
+  background: var(--bg-elevated);
+}
+.preview-css-prop {
+  color: var(--accent);
+  flex: 0 0 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preview-css-value {
+  color: var(--fg-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+/* === Empty state (sem URL) === */
+.preview-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--bg-base);
+  text-align: center;
+}
+.preview-empty-icon {
+  font-size: 48px;
+  color: var(--fg-muted);
+  opacity: 0.4;
+}
+.preview-empty-title {
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 500;
+}
+.preview-empty-hint {
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  max-width: 380px;
+  line-height: 1.5;
+}
+.preview-empty-hint code {
+  background: var(--bg-elevated);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-secondary);
+}
+.preview-empty-btn {
+  margin-top: var(--space-2);
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  transition: filter var(--duration-fast) var(--ease-out-expo);
+}
+.preview-empty-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* Scrollbar minimalista no inspector */
+.preview-inspector-tree::-webkit-scrollbar,
+.preview-inspector-content::-webkit-scrollbar {
+  width: 6px;
+}
+.preview-inspector-tree::-webkit-scrollbar-thumb,
+.preview-inspector-content::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 3px;
+}
+.preview-inspector-tree::-webkit-scrollbar-thumb:hover,
+.preview-inspector-content::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-muted);
+}
+
+/* Console panel — substitui o Terminal embedado */
+.preview-console-body {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 4px 0;
+  overflow-y: auto;
+  background: var(--bg-base);
+}
+.preview-console-count {
+  color: var(--fg-muted);
+  font-weight: normal;
+  margin-left: 4px;
+}
+.preview-console-empty {
+  padding: 16px;
+  color: var(--fg-muted);
+  font-style: italic;
+}
+.preview-console-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  word-break: break-word;
+}
+.preview-console-msg .codicon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 12px;
+}
+.preview-console-msg.is-info .codicon { color: var(--fg-muted); }
+.preview-console-msg.is-warn { background: rgba(255, 191, 0, 0.06); }
+.preview-console-msg.is-warn .codicon { color: #ffbf00; }
+.preview-console-msg.is-error { background: rgba(255, 80, 80, 0.06); }
+.preview-console-msg.is-error .codicon { color: #ff5050; }
+.preview-console-msg.is-verbose { opacity: 0.7; }
+.preview-console-text {
+  flex: 1;
+  white-space: pre-wrap;
+  color: var(--fg-default);
+}
+.preview-console-source {
+  flex-shrink: 0;
+  color: var(--fg-muted);
+  font-size: 10px;
+  opacity: 0.7;
+}
+.preview-console-body::-webkit-scrollbar {
+  width: 6px;
+}
+.preview-console-body::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 3px;
+}
+
+/* DevTools embedado à direita do preview — split horizontal */
+.preview-content.has-devtools {
+  display: flex;
+  flex-direction: row;
+}
+.preview-content.has-devtools .preview-content-page {
+  flex: 1 1 60%;
+  min-width: 0;
+  display: flex;
+  position: relative;
+}
+.preview-content.has-devtools .preview-content-page > .preview-webview,
+.preview-content.has-devtools .preview-content-page > .preview-empty,
+.preview-content.has-devtools .preview-content-page > .preview-loading {
+  flex: 1;
+}
+.preview-content-page {
+  display: flex;
+  flex: 1;
+  position: relative;
+  justify-content: center;
+  align-items: stretch;
+  transition: background 200ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+}
+.preview-content-page > .preview-webview {
+  flex: 1;
+}
+
+/* Viewport modes — restringem largura do webview pra simular dispositivos.
+ * Background do container fica mais escuro pra dar feeling de "device frame". */
+.preview-content-page.preview-viewport-tablet,
+.preview-content-page.preview-viewport-mobile {
+  background: color-mix(in oklab, var(--bg-base) 50%, #000);
+  padding: 16px 0;
+}
+.preview-content-page.preview-viewport-tablet > .preview-webview {
+  flex: 0 0 auto;
+  width: 768px;
+  max-width: calc(100% - 32px);
+  height: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+.preview-content-page.preview-viewport-mobile > .preview-webview {
+  flex: 0 0 auto;
+  width: 375px;
+  max-width: calc(100% - 32px);
+  height: 100%;
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Viewport toggle — único botão que cicla Desktop → Tablet → Mobile.
+ * Cor accent quando não-desktop pra indicar modo de simulação ativo. */
+.preview-viewport-btn.mode-tablet,
+.preview-viewport-btn.mode-mobile {
+  background: color-mix(in oklab, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+.preview-viewport-btn.mode-tablet:hover,
+.preview-viewport-btn.mode-mobile:hover {
+  background: color-mix(in oklab, var(--accent) 22%, transparent);
+}
+
+/* ── Find in page bar (Ctrl+F) ─────────────────────────────────────────── */
+.preview-find-bar {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 6px 0 10px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong, var(--border-subtle));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.18);
+  font-family: var(--font-body);
+  animation: preview-find-in 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes preview-find-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.preview-find-icon {
+  color: var(--fg-muted);
+  font-size: 13px;
+  margin-right: 2px;
+}
+.preview-find-input {
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--fg-primary);
+  font-family: inherit;
+  font-size: 12.5px;
+  width: 180px;
+  padding: 0;
+  height: 100%;
+}
+.preview-find-input::placeholder {
+  color: var(--fg-muted);
+}
+.preview-find-count {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--fg-muted);
+  padding: 0 6px;
+  min-width: 60px;
+  text-align: right;
+  letter-spacing: -0.01em;
+}
+.preview-find-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  border: 0;
+  color: var(--fg-secondary);
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.preview-find-btn:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--fg-primary) 8%, transparent);
+  color: var(--fg-primary);
+}
+.preview-find-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.preview-find-btn .codicon {
+  font-size: 13px;
+}
+.preview-devtools-host {
+  flex: 0 0 40%;
+  min-width: 320px;
+  border-left: 1px solid var(--border-default);
+  display: flex;
+  background: var(--bg-base);
+  position: relative; /* pra ancorar .preview-menu-overlay quando menu aberto */
+}
+.preview-devtools-host > .preview-webview {
+  flex: 1;
+}
+
+/* Divider resizable entre preview e devtools panel */
+.preview-devtools-divider {
+  flex: 0 0 4px;
+  cursor: ew-resize;
+  background: transparent;
+  position: relative;
+  z-index: 2;
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+.preview-devtools-divider:hover,
+.preview-devtools-divider:active {
+  background: var(--accent);
+}
+.preview-devtools-divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  right: -3px;
+}
+
+/* Overlay sobre os webviews durante o drag do divider — sem isso os <webview>
+   capturam mouse events e o resize fica travado. Cobre toda a área do content
+   com pointer-events: auto e cursor ew-resize. */
+.preview-resize-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  cursor: ew-resize;
+  background: transparent;
+}
+.preview-content {
+  position: relative;
+}
+
+/* Divider desabilitado no modo inspect — sem cursor especial nem hover */
+.preview-devtools-divider.is-disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Divider resizable entre preview-main e o inspector panel */
+.preview-inspector-divider {
+  flex: 0 0 4px;
+  cursor: ew-resize;
+  background: transparent;
+  z-index: 2;
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+.preview-inspector-divider:hover,
+.preview-inspector-divider:active {
+  background: var(--accent);
+}
+
+/* Overlay global no preview-body durante resize do inspector — captura mouse
+   pra evitar que <webview> dentro do preview-main come os pointer events. */
+.preview-resize-overlay-global {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  cursor: ew-resize;
+  background: transparent;
+}
+.preview-body {
+  position: relative;
+}
+
+/* ============================================================
+   CSS Inspector — réplica das classes css-* do Cursor.
+   Aplicado primeiro à Position section.
+   ============================================================ */
+
+/* Section sem padding lateral — cada child (header, body, controls) define
+   o próprio padding lateral pra não duplicar com paddings internos */
+.css-inspector-section {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: var(--space-2) 0;
+}
+
+/* P0-SH-1/2/5: section header — padding lateral próprio (parent tem padding 0).
+   Margin-bottom 8px compensa o espaço entre header e body (Cursor usa body gap). */
+.css-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-3);
+  margin-bottom: 8px;
+}
+.css-section-header.clickable {
+  cursor: pointer;
+}
+
+/* P0-SH-1: title 12px 600 normal case foreground (Cursor padrão) */
+.css-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-default);
+}
+
+/* P0-SH-3: section-actions gap 6px (Cursor) */
+.css-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.css-section-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: background var(--duration-fast), border-color var(--duration-fast), color var(--duration-fast);
+}
+.css-section-action:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  color: var(--fg-default);
+}
+.css-section-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.css-section-action.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+/* P0-POS-1: pin button active só muda cor (não bg) — Cursor padrão */
+.css-position-mode-toggle.active,
+.css-position-mode-toggle.active .codicon {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: var(--accent) !important;
+}
+.css-section-action .codicon {
+  font-size: 14px;
+}
+
+/* P0-SH-2: body gap 12px (Cursor) — items grudados demais antes.
+   Padding lateral próprio (parent section tem padding 0). */
+.css-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 var(--space-3);
+}
+
+.css-dual-input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+/* P0-LAY-1/2/3: input-group height 24, padding 2px 6px 2px 4px, bg input (não elevated) */
+.css-input-group {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 6px 2px 4px;
+  height: 24px;
+  max-height: 24px;
+  gap: 6px;
+  transition: border-color var(--duration-fast);
+  /* PA Layout #200 Batch 3 fix: anchor pro `.css-dimension-menu` (position:absolute
+   * top:100%). Sem `position:relative` aqui, o menu renderizava relativo ao
+   * viewport (offscreen) — usuário via "menu não abre". */
+  position: relative;
+}
+/*
+ * Cursor pattern: focus-within usa cor SUTIL no border do container, não
+ * o accent vibrante. Cursor: `var(--vscode-focusBorder)` que em dark theme
+ * é #007FD4 com opacity reduzida. UNDRCOD: usamos --fg-muted (cinza sutil)
+ * pra não distrair com o azul Antigravity vibrante.
+ */
+.css-input-group:focus-within {
+  border-color: var(--fg-muted);
+}
+.css-input-group.css-position-disabled {
+  opacity: 0.5;
+}
+
+/*
+ * Inline label pra inputs (ex: "Start" prefix no Conic angle).
+ * Cursor template Ffw usa <label class=css-input-label>Start</label> antes do <input>.
+ */
+.css-input-label {
+  color: var(--fg-muted);
+  font-size: 11px;
+  margin-right: 4px;
+  flex-shrink: 0;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.css-input-label-draggable {
+  font-size: 11px;
+  color: var(--fg-muted);
+  cursor: ew-resize;
+  user-select: none;
+  flex-shrink: 0;
+  min-width: 10px;
+  display: inline-flex;
+  align-items: center;
+}
+.css-input-label-draggable .codicon {
+  font-size: 12px;
+}
+
+.css-input-field {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+/*
+ * Cursor pattern (literal): .css-number-input é "naked" — sem border,
+ * outline, box-shadow. Focus visual é no CONTAINER via :focus-within
+ * (border-color), não no input próprio.
+ *
+ * !important necessário pra vencer regras globais em global.css:
+ *   - *:focus-visible { outline: 2px solid var(--accent) }  (universal)
+ *   - input[type='number']:focus-visible { box-shadow: inset 0 0 0 1px ... }
+ */
+.css-number-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: var(--fg-default);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 0;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+.css-number-input:focus,
+.css-number-input:focus-visible,
+.css-number-input:active {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+.css-number-input::-webkit-inner-spin-button,
+.css-number-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.css-number-input:disabled {
+  cursor: not-allowed;
+}
+
+/*
+ * Catch-all: TODOS os inputs (text/number/search/etc) dentro do CSS Inspector
+ * ficam "naked" no focus — sem outline/box-shadow/border. Focus visual é no
+ * container via :focus-within. Vence regras globais em global.css 1455-1473.
+ * Cursor pattern literal — todos os css-*-input do StrokeSection/FillSection
+ * têm esse override.
+ */
+.css-inspector-section input:focus,
+.css-inspector-section input:focus-visible,
+.css-inspector-section input:active,
+.css-inspector-section textarea:focus,
+.css-inspector-section textarea:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* P0-LAY: suffix 11px tertiary color (Cursor) */
+.css-input-suffix {
+  font-size: 11px;
+  color: var(--fg-tertiary);
+  flex-shrink: 0;
+  margin-left: 2px;
+  pointer-events: none;
+}
+.css-input-suffix-draggable {
+  cursor: ew-resize;
+  pointer-events: auto;
+}
+
+/* Rotation row ocupa as 3 colunas inteiras do dual-input-row grid */
+.css-rotation-row {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.css-rotation-inputs {
+  flex: 1;
+  min-width: 0;
+}
+/* P0-POS-3: align-items stretch + flex-shrink 0 (Cursor) — actions colam altura do input row */
+.css-rotation-actions {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  gap: 4px;
+}
+/* P0-POS-4: rotation actions têm bg "chip" (Cursor: var(--cursor-bg-tertiary)), não transparent.
+   Mantém 24x24 default do .css-section-action (Cursor não usa 28x28). */
+.css-rotation-action {
+  background: var(--bg-input);
+}
+.css-rotation-action:not(:disabled):hover {
+  background: var(--bg-elevated);
+}
+/* P0-POS-5: standard @vscode/codicons NÃO tem flip-vertical; Cursor usa custom font.
+   Workaround: reusa codicon-arrow-swap rotacionado 90° via CSS. */
+.css-rotation-action--flip-vertical .codicon {
+  transform: rotate(90deg);
+}
+
+/* DOM Tree no painel Components (estilo Cursor) — height controlado por JS
+ * via inspectorTreeHeight state + divider arrastável abaixo. */
+.preview-inspector-section-tree {
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.preview-inspector-section-tree .preview-inspector-tree {
+  overflow-y: auto;
+  padding-bottom: 4px;
+}
+
+/*
+ * Divider horizontal arrastável entre Components tree e Design/CSS tabs.
+ * 6px altura visível (4px target + 2px de afford), cursor row-resize.
+ * Pattern matches o devtools-divider vertical já existente no app.
+ */
+.preview-inspector-tree-divider {
+  flex-shrink: 0;
+  height: 6px;
+  background: transparent;
+  cursor: row-resize;
+  position: relative;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.preview-inspector-tree-divider::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 1px;
+  background: var(--border-subtle);
+  transform: translateY(-50%);
+  transition: background 0.15s ease;
+}
+.preview-inspector-tree-divider:hover::after,
+.preview-inspector-tree-divider.is-resizing::after {
+  background: var(--fg-muted);
+}
+.preview-inspector-tree-divider.is-resizing {
+  background: rgba(255, 255, 255, 0.03);
+}
+.preview-tree-node {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px 3px 0;
+  font-family: var(--font-mono, ui-monospace, "SF Mono", monospace);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--fg-secondary);
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+}
+.preview-tree-node:hover {
+  background: var(--bg-elevated);
+}
+.preview-tree-node.is-active {
+  background: var(--bg-active, var(--bg-elevated));
+  color: var(--fg-default);
+}
+.preview-tree-chevron {
+  font-size: 11px !important;
+  color: var(--fg-muted);
+  cursor: pointer;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.preview-tree-chevron:hover {
+  color: var(--fg-default);
+}
+.preview-tree-leaf {
+  width: 14px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+.preview-tree-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Syntax highlighting do DOM tree (Cursor/Antigravity pattern) */
+.preview-tree-tag {
+  color: var(--accent-300, var(--accent));
+  font-weight: 500;
+}
+.preview-tree-sym {
+  color: var(--fg-tertiary, var(--fg-muted));
+  opacity: 0.7;
+}
+.preview-tree-id {
+  color: #FFB86C; /* warm orange — like CSS selectors em editores */
+}
+.preview-tree-class {
+  color: var(--fg-default);
+}
+.preview-tree-class-more {
+  color: var(--fg-muted);
+  font-size: 10px;
+}
+.preview-tree-node.is-active .preview-tree-tag,
+.preview-tree-node.is-active .preview-tree-class {
+  color: var(--fg-default);
+  font-weight: 600;
+}
+.preview-tree-node.is-active {
+  background: var(--bg-active);
+}
+
+/* PA Layout #199 Batch 2: Dimensions section flat (sem chevron sub-section).
+ * Substitui o <Group title="Dimensions"> antigo (que tinha collapse chevron).
+ * "Dimensions" agora é só um label inline + rows abaixo — match Cursor. */
+.css-dimension-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+}
+.css-dimension-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-default);
+  padding: 0 var(--space-3);
+}
+
+/* Dimensions (W/H) — 2 colunas lado a lado com dropdown menu custom */
+.css-dimension-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0 var(--space-3);
+}
+/* css-input-field--with-dropdown: layout flex que inclui input + suffix + dropdown button */
+.css-input-field--with-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.css-dimension-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.css-dimension-mode-toggle:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg-default);
+}
+.css-dimension-mode-toggle .codicon {
+  font-size: 10px;
+}
+.css-dimension-mode-label {
+  text-transform: lowercase;
+}
+.css-dimension-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 200;
+  /* Width fixo igual Cursor (width:180 no `hpe`). */
+  width: 180px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  padding: 4px 0;
+  /* Removido overflow: hidden — estava cortando texto. */
+}
+/* Anchor dinâmico (replica Cursor: anchor: width==="width"?"top-left":"top-right") */
+.css-input-group[data-dimension="width"] .css-dimension-menu { left: 0; }
+.css-input-group[data-dimension="height"] .css-dimension-menu { right: 0; }
+.css-dimension-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  color: var(--fg-default);
+  font-family: var(--font-body);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast);
+}
+.css-dimension-menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.css-dimension-menu-item.is-active {
+  color: var(--accent);
+}
+.css-dimension-menu-icon {
+  font-size: 12px !important;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+  width: 14px;
+}
+.css-dimension-menu-label {
+  flex: 1;
+}
+.css-dimension-menu-measurement {
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  margin-left: 4px;
+}
+.css-dimension-menu-check {
+  font-size: 12px !important;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.css-dimension-menu-separator {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 0;
+}
+
+/* Layout Extras (Flex + Grid) — aparecem após escolher Flow mode */
+.css-flex-extras {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 8px;
+  padding: 8px var(--space-3) 0;
+  align-items: start;
+}
+.css-alignment-grid {
+  /* 9 cells FLAT (sem wrappers) — usa CSS grid pra layout 3×3.
+     Matching template Tpw do Cursor que renderiza via pa loop direto. */
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px;
+  aspect-ratio: 1;
+  min-height: 72px;
+}
+.css-alignment-grid-cell {
+  background: transparent;
+  border: 1px dashed transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+.css-alignment-grid-cell:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-subtle);
+}
+.css-alignment-grid-cell.active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.css-alignment-grid-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--fg-muted);
+  transition: background var(--duration-fast);
+}
+.css-alignment-grid-cell:hover .css-alignment-grid-dot { background: var(--fg-default); }
+.css-alignment-grid-cell.active .css-alignment-grid-dot { background: #fff; }
+
+.css-gap-input {
+  display: flex;
+  align-items: center;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 0 8px;
+  height: 28px;
+  gap: 4px;
+}
+.css-gap-input:focus-within { border-color: var(--fg-muted); }
+.css-gap-input.is-auto .css-number-input { color: var(--accent); }
+.css-gap-label {
+  font-size: 11px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.css-gap-label .codicon { font-size: 12px; }
+
+/* Grid extras: picker + dual gap inputs */
+.css-grid-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px var(--space-3) 0;
+}
+.css-grid-picker-trigger-wrap {
+  position: relative;
+}
+.css-grid-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px 8px;
+  height: 28px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-default);
+  cursor: pointer;
+  width: 100%;
+}
+.css-grid-picker-trigger:hover { border-color: var(--accent); }
+.css-grid-picker-trigger-value {
+  flex: 1;
+  text-align: left;
+}
+.css-grid-picker-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 200;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  padding: 8px;
+}
+.css-grid-picker-header {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-muted);
+  text-align: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 6px;
+}
+/* Grid picker — 88 cells flat (11×8) via CSS grid. Matching xpw template. */
+.css-grid-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(11, 18px);
+  grid-auto-rows: 18px;
+  gap: 2px;
+  position: relative; /* anchor pra css-grid-picker-tooltip (Ipw) */
+}
+/* Tooltip flutuante exibindo "col × row" enquanto hover. Cursor (Ipw):
+   posição calculada em JS via (col-0.5)*20px, row*20+4px (cell=18 + gap=2 = 20). */
+.css-grid-picker-tooltip {
+  position: absolute;
+  transform: translateX(-50%);
+  background: var(--bg-elevated);
+  color: var(--fg-default);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}
+.css-grid-picker-cell {
+  width: 18px;
+  height: 18px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 0;
+}
+.css-grid-picker-cell[data-selected="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.css-grid-gap-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+/* Position info label dentro do Layout group (igual screenshot Cursor) */
+.css-layout-position-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px var(--space-3) 0;
+  font-family: var(--font-body);
+  font-size: 11px;
+}
+.css-layout-position-label-text {
+  color: var(--fg-muted);
+}
+.css-layout-position-label-value {
+  color: var(--fg-default);
+}
+
+/* Alignment + Gap (jG0 layout) — row com 2 controls lado a lado, cada com label em cima */
+.css-alignment-gap-row {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 12px;
+  padding: 8px var(--space-3) 0;
+  align-items: flex-end;
+}
+.css-alignment-control,
+.css-gap-control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+/* P0-LAY-4: control-label sem uppercase/mono/letter-spacing — Cursor é sans 10px 500 */
+.css-control-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--fg-muted);
+}
+.css-alignment-grid-icon {
+  font-size: 10px !important;
+  color: #fff;
+}
+.css-number-input--mode-token {
+  color: var(--accent);
+  font-style: italic;
+}
+.css-gap-label-icon .codicon {
+  font-size: 12px;
+}
+
+/* Grid picker (KG0) — trigger + menu com inputs C×R + grid 11×8 visual */
+.css-grid-dimensions-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 8px;
+  height: 36px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-default);
+  cursor: pointer;
+  width: 100%;
+}
+.css-grid-dimensions-trigger:hover { border-color: var(--accent); }
+.css-grid-dimensions-label {
+  font-weight: 500;
+}
+.css-grid-picker-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  min-width: 280px;
+}
+.css-grid-picker-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 200;
+}
+.css-grid-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.css-grid-picker-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.css-grid-picker-input-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+.css-grid-picker-input-group .css-input-label-draggable {
+  font-size: 10px;
+}
+.css-grid-picker-input {
+  width: 36px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--fg-default);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.css-grid-picker-input::-webkit-inner-spin-button,
+.css-grid-picker-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.css-grid-picker-separator {
+  color: var(--fg-muted);
+  font-size: 11px;
+}
+.css-grid-gap-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Padding controls (YG0 css-padding-*) */
+.css-padding-controls {
+  padding: 8px var(--space-3) 0;
+}
+.css-padding-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.css-edit-sides-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+.css-edit-sides-toggle:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-default);
+}
+.css-edit-sides-toggle.is-active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.css-edit-sides-toggle .codicon {
+  font-size: 12px;
+}
+.css-padding-axis-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.css-padding-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+/* Mismatch indicator: input com valores diferentes nos lados (top ≠ bottom). */
+.css-input-group[data-mismatch="true"] {
+  border-color: rgba(255, 191, 0, 0.4);
+}
+.css-input-group[data-mismatch="true"] .css-input-label-draggable .codicon {
+  color: #ffbf00;
+}
+
+/* PA Layout #198 P1-3/P1-4: Cursor usa CHECKBOX (square) não toggle switch
+ * pra Clip content + Border box. Visual padrão Windows/Word/Mac.
+ * Layout: `[square 14px] [label]` — checkbox à esquerda. */
+.css-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 6px var(--space-3);
+  cursor: pointer;
+  color: var(--fg-default);
+  font-size: 12px;
+  width: 100%;
+  text-align: left;
+  user-select: none;
+}
+.css-checkbox-row:hover .css-checkbox-square:not(.is-checked) {
+  border-color: var(--fg-muted);
+}
+.css-checkbox-square {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 3px;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+.css-checkbox-square.is-checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.css-checkbox-square .codicon {
+  font-size: 11px;
+  color: #fff;
+}
+.css-checkbox-label {
+  color: inherit;
+  line-height: 1.2;
+}
+
+/* Cursor-style toggle rows + switch (dpe component) */
+.css-toggle-row,
+.css-padding-box-sizing {
+  padding: 6px var(--space-3) 0;
+}
+.css-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.css-toggle:hover > span:first-child {
+  color: var(--fg-primary);
+}
+.css-toggle > span:first-child {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--fg-default);
+  transition: color var(--duration-fast);
+}
+.css-switch {
+  flex-shrink: 0;
+  position: relative;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  padding: 0;
+  cursor: pointer;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+.css-switch--small { width: 26px; height: 14px; }
+.css-switch--medium { width: 32px; height: 18px; }
+.css-switch.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.css-switch:hover:not(.is-on) {
+  background: var(--bg-active, rgba(255, 255, 255, 0.08));
+}
+.css-switch-thumb {
+  position: absolute;
+  top: 50%;
+  left: 1px;
+  transform: translateY(-50%);
+  background: #fff;
+  border-radius: 50%;
+  transition: left var(--duration-fast) var(--ease-out-expo);
+  pointer-events: none;
+}
+.css-switch--small .css-switch-thumb {
+  width: 10px;
+  height: 10px;
+}
+.css-switch--medium .css-switch-thumb {
+  width: 14px;
+  height: 14px;
+}
+.css-switch.is-on .css-switch-thumb {
+  left: calc(100% - 11px);
+}
+.css-switch--medium.is-on .css-switch-thumb {
+  left: calc(100% - 15px);
+}
+
+/* Appearance section (UG0 / Vmw template) */
+/* P0-SH-4: header-actions gap 0 (Cursor — botões grudados no header) */
+.css-section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.css-appearance-grid {
+  /* Cursor renderiza Opacity e Corner Radius LADO A LADO (2 colunas) */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 8px var(--space-3);
+}
+.css-control-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.css-corner-radius-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.css-corner-radius-group {
+  flex: 1;
+}
+/* P0-APP/BRD: corner-toggle 24×24 radius 6, active só cor link */
+.css-corner-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+}
+.css-corner-toggle-button:hover {
+  background: var(--bg-active, rgba(255, 255, 255, 0.08));
+  color: var(--fg-default);
+}
+/* P0-APP-2: active só cor, sem bg accent (Cursor) */
+.css-corner-toggle-button.is-active,
+.css-corner-toggle-button[data-active="true"] {
+  background: transparent;
+  color: var(--accent);
+  border-color: transparent;
+}
+.css-corner-toggle-button .codicon {
+  font-size: 12px;
+}
+.css-corner-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/*
+ * Cursor pattern (Ifw template): stroke-row é UMA row horizontal SEM wrap.
+ * Screenshot Cursor: [color input flex:1] [row-actions flex:0 0 auto]
+ * Color input expande pra esquerda, actions ficam à direita.
+ * No-wrap pra evitar quebrar em 2 linhas (bug anterior).
+ */
+.css-stroke-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  min-width: 0;
+}
+.css-stroke-row > .css-color-input-container,
+.css-stroke-row > .css-color-token-button {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.css-stroke-row-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* P0-BRD-1/2/3: stroke-action 26×26 radius 6px, active SÓ muda cor (sem bg) */
+.css-stroke-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+.css-stroke-action:hover:not(:disabled),
+.css-stroke-action.active {
+  background: transparent;
+  color: var(--fg-primary);
+}
+.css-stroke-action .codicon { font-size: 14px; }
+
+/*
+ * Section action disabled state — Cursor pattern: button.disabled fica fade
+ * (opacity 0.4) + cursor not-allowed. Usado pelo "+" Add quando hasStroke.
+ */
+.css-section-action:disabled,
+.css-section-action[disabled] {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.css-theme-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 200;
+  width: 140px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  padding: 4px 0;
+}
+.css-theme-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  color: var(--fg-default);
+  font-family: var(--font-body);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.css-theme-menu-item:hover { background: rgba(255, 255, 255, 0.05); }
+.css-theme-menu-item.is-active { color: var(--accent); }
+.css-theme-menu-item .codicon { font-size: 12px; }
+.css-theme-menu-item > span { flex: 1; }
+.css-theme-menu-check { color: var(--accent); }
+
+/*
+ * ============================================================
+ * Color Tokens picker — replica Cursor _8 menu (FillSection.js)
+ * ============================================================
+ * Popover 280×280 with search input, token list (swatch + name +
+ * value subtitle), hover preview, and linked-token button.
+ * CSS from Cursor: css-color-token-*, css-tokens-menu-*.
+ */
+
+/* --- Tokens menu popover (anchor: top-right of trigger button) --- */
+.css-tokens-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 200;
+  width: 280px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  padding: 4px 0;
+  outline: none;
+}
+/* Search input — Cursor _8 menu: text-[12px] leading-[15px], no border on focus */
+.css-tokens-menu-search {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  margin: 2px;
+  box-sizing: border-box;
+}
+.css-tokens-menu-search input {
+  flex: 1;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: var(--fg-primary);
+  font-size: 12px;
+  line-height: 15px;
+  font-family: var(--font-body);
+  padding: 2px 0;
+}
+.css-tokens-menu-search input:focus,
+.css-tokens-menu-search input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+.css-tokens-menu-search input::placeholder {
+  color: var(--fg-muted);
+}
+/* Empty / message state */
+.css-tokens-menu-empty {
+  padding: 8px 12px;
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-family: var(--font-body);
+}
+/* Each token row — Cursor density: ~24px height, tight padding */
+.css-tokens-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  color: var(--fg-default);
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+}
+.css-tokens-menu-item:hover { background: var(--bg-active, rgba(255, 255, 255, 0.05)); }
+.css-tokens-menu-item.is-active { color: var(--accent); }
+.css-tokens-menu-item .codicon { font-size: 12px; color: var(--accent); flex-shrink: 0; }
+/* Token name — title */
+.css-tokens-menu-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono, monospace);
+  min-width: 0;
+}
+/* Token value — subtitle in muted */
+.css-tokens-menu-value {
+  flex-shrink: 0;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg-muted);
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+}
+
+/*
+ * Checkerboard swatch — Cursor pattern (css-color-token-swatch):
+ * ::before = checkerboard pattern (for transparent bg visibility)
+ * ::after  = actual color overlay via --css-inspector-token-color
+ */
+.css-tokens-menu-swatch,
+.css-color-token-swatch {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.css-tokens-menu-swatch::before,
+.css-color-token-swatch::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image:
+    linear-gradient(45deg, rgba(0,0,0,.08) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.08) 75%),
+    linear-gradient(45deg, transparent 25%, rgba(0,0,0,.08) 25%, rgba(0,0,0,.08) 75%, transparent 75%);
+  background-size: 6px 6px;
+  background-position: 0 0, 3px 3px;
+}
+.css-tokens-menu-swatch::after,
+.css-color-token-swatch::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: var(--css-inspector-token-color, transparent);
+}
+
+/*
+ * Linked-token button — Cursor pattern (_pw template):
+ * Shows when a CSS var is linked. Click to re-open picker.
+ * Shape: [swatch] [token-name] [unlink-x-btn]
+ */
+.css-color-token-button {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+  padding: 2px 2px 2px 6px;
+  background: var(--bg-input, var(--bg-elevated));
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  color: var(--fg-primary);
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+.css-color-token-button:hover {
+  background: var(--bg-active);
+}
+.css-color-token-button:focus-visible {
+  border-color: var(--accent);
+}
+.css-color-token-button .css-color-token-swatch {
+  flex-shrink: 0;
+}
+.css-color-token-name {
+  flex: 1;
+  font-family: var(--font-mono, monospace);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.css-color-token-unlink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+}
+.css-color-token-unlink:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+.css-color-token-unlink:focus-visible {
+  outline: 1px solid var(--accent);
+}
+.css-color-token-unlink .codicon {
+  font-size: 12px;
+}
+
+/* Aliases pras classes do Cursor (mantém preview-* funcionando legado) */
+.css-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 8px var(--space-3) 0;
+}
+.css-flow-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+}
+.css-flow-option:hover {
+  background: var(--bg-active, rgba(255, 255, 255, 0.08));
+  color: var(--fg-default);
+}
+.css-flow-option.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.css-flow-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.css-flow-icon svg { width: 16px; height: 16px; }
+.css-flow-icon .codicon { font-size: 14px; }
+
+/* Padding/Margin mode toggles (sem prefixo edit-sides) */
+/* P1-LAY-5: padding/margin mode-toggle 26×26 radius 6 (Cursor) */
+.css-padding-mode-toggle,
+.css-margin-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+}
+.css-padding-mode-toggle:hover,
+.css-margin-mode-toggle:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-default);
+}
+/* P1-LAY-6: active só muda cor pra accent (Cursor) */
+.css-padding-mode-toggle.active,
+.css-margin-mode-toggle.active {
+  background: transparent;
+  color: var(--accent);
+  border-color: transparent;
+}
+.css-padding-mode-toggle .codicon,
+.css-margin-mode-toggle .codicon { font-size: 14px; }
+
+/* Margin: mesmas regras de layout que padding mas com classes distintas */
+.css-margin-controls {
+  padding: 8px var(--space-3) 0;
+}
+.css-margin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.css-margin-axis-row,
+.css-margin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+/* Input dropdown (DimensionInput trigger) */
+.css-input-dropdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.css-input-dropdown:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg-default);
+}
+.css-input-dropdown .codicon { font-size: 10px; }
+.css-input-dropdown-label { text-transform: lowercase; }
+
+/* Suffix com data-hidden (Cursor pattern) */
+.css-input-suffix[data-hidden="true"] { display: none; }
+
+/* readOnly readability — sem opacity 0.5 do disabled */
+.css-number-input[readonly] {
+  cursor: default;
+}
+
+/* data-active=true equivalente a .active (Cursor convention) */
+/* P0-APP-2: (duplicada de cima — só pra garantir override de qualquer fonte) */
+.css-corner-toggle-button[data-active="true"] {
+  background: transparent;
+  color: var(--accent);
+  border-color: transparent;
+}
+
+/* PA #205: corner-preview com border mais visível.
+ * Antes `--border-subtle` ficava quase invisível em fundo escuro — usuário
+ * achou que os ícones estavam "escuros demais". Usa --fg-muted (gray mais
+ * contrastado) pra match a visibilidade do Cursor. */
+.css-corner-preview {
+  background: transparent;
+  border: 1.5px solid var(--fg-muted);
+  border-radius: 0;
+  height: 16px;
+  width: 16px;
+  flex-shrink: 0;
+}
+.css-corner-preview[data-corner="top-left"] { border-top-left-radius: 8px; }
+.css-corner-preview[data-corner="top-right"] { border-top-right-radius: 8px; }
+.css-corner-preview[data-corner="bottom-right"] { border-bottom-right-radius: 8px; }
+.css-corner-preview[data-corner="bottom-left"] { border-bottom-left-radius: 8px; }
+.css-corner-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* alignment grid com data-space-between aplicado quando autoGap */
+.css-alignment-grid[data-space-between="true"] {
+  /* visual subtle pra indicar "modo space-between" */
+  outline: 1px dashed var(--accent);
+  outline-offset: -1px;
+}
+
+/* Typography section (Vfw) */
+/* P0-TXT-1: typography-body gap 12px (Cursor) */
+.css-typography-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px var(--space-3);
+}
+/* P1-TXT-3: font-dropdown background transparent + border subtle + padding 3px 8px */
+.css-font-dropdown {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 3px 8px;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--fg-default);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+.css-font-dropdown:hover { background: var(--bg-hover-dropdown); }
+.css-font-dropdown-label {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.css-font-dropdown .codicon { font-size: 11px; color: var(--fg-muted); }
+/* WeightDropdown — custom (substitui <select> nativo do font-weight).
+   Estilo segue padrão do css-input-group pra encaixar no css-typography-row */
+.css-weight-dropdown-wrapper {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.css-weight-dropdown {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  height: 24px;
+  background: var(--bg-input);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 6px 2px 8px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--fg-default);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.1s ease;
+}
+.css-weight-dropdown:hover { border-color: var(--border-subtle); }
+.css-weight-dropdown:focus-visible { border-color: var(--accent); }
+.css-weight-dropdown[aria-expanded="true"] { border-color: var(--accent); }
+.css-weight-dropdown-value {
+  flex: 1;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+.css-weight-dropdown .codicon {
+  color: var(--fg-muted);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.css-weight-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.css-weight-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--fg-default);
+  cursor: pointer;
+  text-align: left;
+  outline: none;
+  transition: background 0.1s ease;
+}
+.css-weight-menu-item:hover,
+.css-weight-menu-item:focus-visible {
+  background: var(--bg-hover-dropdown);
+}
+.css-weight-menu-item.active {
+  background: var(--bg-active);
+  color: var(--fg-default);
+  font-weight: 600;
+}
+.css-weight-menu-item .codicon {
+  color: var(--accent);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* P1-TXT-4: font-menu shadow Cursor exato: 0 4px 18px rgba(0,0,0,0.3), padding 6px */
+.css-font-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+  max-height: 280px;
+  overflow: hidden;
+  padding: 6px;
+}
+.css-font-list {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.css-font-menu-item {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  color: var(--fg-default);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.css-font-menu-item:hover { background: rgba(255, 255, 255, 0.05); }
+.css-font-menu-item.active { color: var(--accent); }
+
+/* PA #196 P0-1: Search input no topo do font dropdown (`css-font-search`).
+ * Estilo idêntico aos outros inputs do Inspector. Auto-focado quando abre. */
+.css-font-search-wrap {
+  padding: 2px 4px 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 4px;
+}
+.css-font-search {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--fg-default);
+  font-size: 12px;
+  padding: 4px 8px;
+  outline: none;
+}
+.css-font-search:focus-visible {
+  border-color: var(--fg-muted);
+}
+.css-font-menu-empty {
+  padding: 12px;
+  color: var(--fg-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* P2-TXT: typography-row gap 8px align stretch (Cursor) */
+.css-typography-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+.css-select-input-field {
+  position: relative;
+  flex: 1;
+}
+.css-select {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--fg-default);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 0 20px 0 4px;
+  appearance: none;
+  cursor: pointer;
+}
+/* Fix nativo do <select>: ver nota em .css-effects-type-select option */
+.css-select {
+  color-scheme: dark;
+  accent-color: var(--bg-active);
+}
+.css-select option {
+  background: var(--bg-elevated) !important;
+  background-color: var(--bg-elevated) !important;
+  color: var(--fg-primary) !important;
+}
+.css-select option:checked,
+.css-select option:hover,
+.css-select option:focus {
+  background: var(--bg-active) !important;
+  background-color: var(--bg-active) !important;
+  color: var(--fg-primary) !important;
+  box-shadow: 0 0 10px 100px var(--bg-active) inset !important;
+}
+.css-select-input-field .codicon {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--fg-muted);
+  pointer-events: none;
+}
+.css-input-suffix-draggable {
+  cursor: ew-resize;
+}
+
+.css-gradient-type-row {
+  display: flex;
+}
+/* P0-BG-1/2: gradient-type-button border-radius 6px, padding 3px 6px,
+   border 1px subtle, hover usa bg-hover-dropdown */
+.css-gradient-type-button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 3px 6px;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--fg-default);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+.css-gradient-type-button:hover {
+  background: var(--bg-hover-dropdown);
+}
+.css-gradient-type-button .codicon {
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+.css-gradient-type-button[disabled] { cursor: default; opacity: 0.7; }
+.css-gradient-type-label { flex: 1; text-align: left; }
+
+/* P0-TXT-2: typography-field gap 4px (Cursor) */
+.css-typography-field {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+/* PA Typography #196 P1-3: Cursor usa "Line Height" / "Letter Spacing"
+ * em mixed case, não uppercase. Removido text-transform + letter-spacing pra
+ * casar com referência. Mantido font-size 10px / weight 500 / fg-muted. */
+.css-typography-field-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--fg-muted);
+}
+.css-typography-input-group { /* same as css-input-group */ }
+.css-typography-label-icon .codicon { font-size: 12px; }
+
+.css-typography-align-row {
+  display: flex;
+  gap: 8px;
+}
+.css-button-group {
+  display: flex;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.css-button-group-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 26px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border-subtle);
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+.css-button-group-item:last-child { border-right: none; }
+.css-button-group-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--fg-default); }
+.css-button-group-item.active { background: var(--accent); color: #fff; }
+.css-button-group-item .codicon { font-size: 12px; }
+
+/* Color input row (jfw) */
+.css-color-input-container {
+  display: flex;
+  align-items: center;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 0 4px;
+  height: 28px;
+  gap: 4px;
+}
+.css-color-input-container:focus-within { border-color: var(--fg-muted); }
+.css-color-swatch-inline {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  cursor: pointer;
+  background: transparent;
+  padding: 0;
+  flex-shrink: 0;
+  -webkit-appearance: none;
+}
+.css-color-swatch-inline::-webkit-color-swatch-wrapper { padding: 0; }
+.css-color-swatch-inline::-webkit-color-swatch { border: none; border-radius: 2px; }
+/*
+ * Swatch "None" — pattern checkerboard transparente (match Figma/Webflow).
+ * Usa CSS gradient pra desenhar 4 quadrados 4x4px alternados.
+ * `::-webkit-color-swatch` herda transparent pra deixar o pattern aparecer.
+ * Linha diagonal vermelha em cima reforça "vazio" (estilo Figma "no fill").
+ */
+.css-color-swatch-none {
+  background-color: var(--bg-elevated);
+  background-image:
+    linear-gradient(135deg, transparent 45%, #ff3b30 45%, #ff3b30 55%, transparent 55%),
+    linear-gradient(45deg, var(--fg-muted) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--fg-muted) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--fg-muted) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--fg-muted) 75%);
+  background-size: 100% 100%, 8px 8px, 8px 8px, 8px 8px, 8px 8px;
+  background-position: 0 0, 0 0, 0 4px, 4px -4px, -4px 0px;
+  opacity: 0.85;
+}
+.css-color-swatch-none::-webkit-color-swatch-wrapper { padding: 0; }
+.css-color-swatch-none::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+}
+/* Label "None" no hex input — cor muted pra indicar placeholder/ausência. */
+.css-hex-input-none {
+  color: var(--fg-muted);
+  font-style: italic;
+  text-transform: none;
+}
+.css-hex-input-none:focus {
+  color: var(--fg-default);
+  font-style: normal;
+}
+/*
+ * Cursor pattern literal: .css-hex-input é "naked" — sem border/outline/box-shadow.
+ * !important vence as regras globais em global.css 1455-1473:
+ *   - *:focus-visible { outline: 2px solid var(--accent) }  (universal)
+ *   - input[type='text']:focus-visible { box-shadow: inset 0 0 0 1px ... }
+ * Focus visual é no container (.css-color-input-container) via :focus-within.
+ */
+.css-hex-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: var(--fg-default);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 0;
+  text-transform: uppercase;
+}
+.css-hex-input:focus,
+.css-hex-input:focus-visible,
+.css-hex-input:active {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+.css-input-separator {
+  width: 1px;
+  height: 14px;
+  background: var(--border-subtle);
+  flex-shrink: 0;
+}
+.css-opacity-input-inline {
+  display: flex;
+  align-items: center;
+  width: 60px;
+  flex-shrink: 0;
+}
+
+/* Background section (Cursor ypw template) */
+.css-fill-controls {
+  padding: 8px var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.css-fill-controls .preview-layered-section {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+.css-fill-controls .preview-layered-section.no-header {
+  margin-top: 0;
+}
+
+/* Advanced details (bg-image options) */
+.css-bg-advanced {
+  padding: 6px var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+.css-bg-advanced > summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  padding: 4px 0;
+  outline: none;
+  list-style: none;
+}
+.css-bg-advanced > summary::-webkit-details-marker { display: none; }
+.css-bg-advanced > summary::before {
+  content: "▸ ";
+  color: var(--fg-muted);
+  transition: transform var(--duration-fast);
+  display: inline-block;
+}
+.css-bg-advanced[open] > summary::before { content: "▾ "; }
+.css-bg-advanced[open] > * { margin-top: 4px; }
+
+/* Border section (Cursor Dfw template) — usa classes css-stroke-* internas */
+/* P0-BRD: stroke-controls gap 12px (Cursor) */
+.css-stroke-controls {
+  padding: 8px var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.css-stroke-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+/* P0-BRD-6: stroke-field-label sem uppercase/mono, 11px secondary */
+.css-stroke-field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  margin-bottom: 4px;
+  color: var(--fg-muted);
+}
+/*
+ * Cursor pattern (Rfw literal): meta-row é HORIZONTAL, wrap se não couber.
+ *   .css-stroke-meta-row { align-items:center; display:flex; flex-wrap:wrap; gap:8px; }
+ *   .css-stroke-field { flex:0 0 auto; min-width:0; }
+ *   .css-stroke-side-button { margin-left:auto; }  ← empurra pro fim
+ */
+.css-stroke-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.css-stroke-field {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.css-stroke-field-label {
+  display: block;
+  color: var(--fg-muted);
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+.css-stroke-field .css-select {
+  height: 26px;
+  font-size: 12px;
+}
+/* P0-BRD-4: stroke-weight-input com bg input, min-height 24, padding 0 8px 0 4px,
+   gap 6px, min-width 100px. Suffix dentro é position:static (override). */
+.css-stroke-weight-input {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 0 8px 0 4px;
+  min-height: 24px;
+  min-width: 100px;
+  gap: 6px;
+}
+.css-stroke-weight-input:focus-within { border-color: var(--fg-muted); }
+.css-stroke-weight-input .css-number-input {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  text-align: left;
+  width: 24px;
+}
+.css-stroke-weight-input .css-input-suffix {
+  position: static;
+  color: var(--fg-muted);
+  font-size: 11px;
+  right: auto;
+  top: auto;
+  transform: none;
+}
+.css-stroke-weight-drag {
+  background: transparent;
+  border: none;
+  cursor: ew-resize;
+  color: var(--fg-muted);
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+.css-stroke-weight-drag:hover,
+.css-stroke-weight-drag[data-dragging="true"] {
+  color: var(--fg-default);
+}
+.css-stroke-weight-drag .codicon { font-size: 12px; }
+/*
+ * Side picker popover — Cursor abre menu com 5 opções (All/Top/Right/Bottom/Left).
+ * Posicionado abaixo do trigger button.
+ */
+.css-side-picker-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 200;
+  min-width: 140px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 4px 0;
+  outline: none;
+}
+.css-side-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  color: var(--fg-default);
+  font-family: var(--font-body);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.css-side-picker-item:hover { background: var(--bg-active, rgba(255, 255, 255, 0.05)); }
+.css-side-picker-item.is-active { color: var(--accent); }
+.css-side-picker-item .codicon { font-size: 12px; flex-shrink: 0; }
+.css-side-picker-item span { flex: 1; }
+
+/* P1-BRD-5: stroke-side-trigger alinhado com baseline do input */
+.css-stroke-side-button {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  margin-left: auto;
+}
+.css-stroke-side-trigger-button {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-top: 18px;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+.css-stroke-side-trigger-button:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-default);
+}
+.css-stroke-side-trigger-button .codicon { font-size: 14px; }
+
+/* Shadow & Blur (Cursor ipw template) — body gap 12px (Cursor) */
+.css-effects-body {
+  padding: 8px var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* P1-SHA: effect-entry sem bg+padding (Cursor é só wrapper flex) */
+.css-effect-entry {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+/* P0-SHA-3: type-select-container com bg input + border subtle + height 24 + radius 6 */
+.css-effects-type-select-wrapper {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+.css-effects-type-select-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  height: 24px;
+  width: 100%;
+}
+.css-effects-type-select {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  color: var(--fg-default);
+  font-size: 12px;
+  height: 100%;
+  line-height: 1.4;
+  padding: 0 32px 0 10px;
+  cursor: pointer;
+}
+/* Fix nativo do <select>: as <option> renderizam com tema OS (texto branco
+ * em hover, fundo system-blue no item selected). Forçamos tokens do UNDRCOD
+ * (--bg-elevated/--bg-active + --fg-primary) — assim respeita theme.
+ * !important + box-shadow trick pra vencer UA stylesheet do Chromium Win. */
+.css-effects-type-select {
+  color-scheme: dark;
+  accent-color: var(--bg-active);
+}
+.css-effects-type-select option {
+  background: var(--bg-elevated) !important;
+  background-color: var(--bg-elevated) !important;
+  color: var(--fg-primary) !important;
+}
+.css-effects-type-select option:checked,
+.css-effects-type-select option:hover,
+.css-effects-type-select option:focus {
+  background: var(--bg-active) !important;
+  background-color: var(--bg-active) !important;
+  color: var(--fg-primary) !important;
+  box-shadow: 0 0 10px 100px var(--bg-active) inset !important;
+}
+.css-effects-type-select-adornment {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  color: var(--fg-muted);
+}
+.css-effects-row-actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* Icon button do effect entry (`css-effects-icon-button`) — abre popover editor */
+.css-effects-icon-button {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--fg-default);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+.css-effects-icon-button:hover,
+.css-effects-icon-button:focus-visible {
+  background: var(--bg-elevated);
+  border-color: transparent;
+  color: var(--fg-default);
+}
+.css-effects-icon-button[aria-expanded="true"] {
+  background: var(--bg-elevated);
+  color: var(--fg-default);
+  border-color: transparent;
+}
+.css-effects-icon-button .codicon { font-size: 14px; }
+/* P1-SHA-5: drop-shadow icon tem efeito visual de drop-shadow no próprio ícone */
+.css-effects-icon-drop-shadow > .codicon {
+  border-radius: 2px;
+  box-shadow: 0 2px 0 0 var(--bg-base);
+}
+
+/* Effect entry selected state (data-selected="true" quando popup aberto).
+ *
+ * Cursor literal: NÃO desenha outline visível no row selecionado — o popup
+ * abre abaixo e isso por si só já indica qual row tá ativo. UNDRCOD tinha
+ * `outline: 1px solid var(--accent)` (azul forte) que destoava do Cursor.
+ *
+ * Fix PA Shadow&Blur (#193): remover outline azul, manter só o sutil bg-surface
+ * pra dar um hint discreto. Match visual com Cursor.
+ */
+.css-effect-entry[data-selected="true"] {
+  background: var(--bg-surface);
+}
+
+/* Popup editor (anchor abaixo do icon button) */
+.css-effects-popup {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1000;
+  width: 320px;
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  padding: 10px;
+}
+.css-effect-entry {
+  position: relative; /* anchor pro popup */
+}
+
+/* Controls grid no popup */
+.css-effects-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* P1-SHA-6: parameters grid auto-fit minmax 140px (responsivo) */
+.css-effects-parameters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+/* P2-SHA-7: color-row é flex-direction column (Cursor) */
+.css-effects-color-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Shadow & Blur empty state */
+/* P0-SHA-1: empty state Cursor — 1px dashed border, radius 6, padding 10px,
+   text secondary, font-size 12, justify-content space-between */
+.css-effects-empty {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 6px;
+  padding: 10px;
+  cursor: pointer;
+  color: var(--fg-muted);
+  font-size: 12px;
+  margin: 0 var(--space-3) var(--space-3);
+  transition: border-color 0.1s ease, color 0.1s ease;
+}
+.css-effects-empty:hover {
+  border-color: var(--border-strong);
+  color: var(--fg-default);
+}
+.css-effects-empty-hint {
+  font-size: 12px;
+  color: var(--fg-default);
+}
+.css-effects-empty-action {
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+
+/*
+ * ============================================================
+ * Gradient editor — Cursor literal (Mfw/Bfw/Ffw templates).
+ * ============================================================
+ * Path: out-build/.../cssInspector/{Fill,Stroke,Text}Section.js
+ * CSS path: workbench.desktop.main.css
+ *
+ * Estrutura:
+ *   .css-gradient-controls       (flex column, gap 12px)
+ *     .css-gradient-preview-container
+ *       .css-gradient-preview          (height 32px, radius 6px)
+ *         .css-gradient-preview-track  (overflow hidden, painted bg)
+ *     .css-gradient-angle-row OR .css-gradient-shape-row
+ *       (angle input OR Circle/Ellipse buttons)
+ *       .css-gradient-header-actions
+ *         .css-gradient-action-btn × 2 (reverse + trash)
+ *     .css-gradient-stops              (flex column, gap 8px)
+ *       .css-gradient-stops-header
+ *         .css-control-label "Stops"
+ *         .css-gradient-add-stop       (+ icon button)
+ *       .css-gradient-stop-row × n     (flex align-center gap 8px padding 4px)
+ *         .css-gradient-stop-position-input (50px width)
+ *         .css-gradient-stop-color-container
+ *         .css-gradient-stop-remove     (24x24 button)
+ */
+.css-gradient-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.css-gradient-preview-container {
+  padding: 8px 0;
+  position: relative;
+}
+.css-gradient-preview {
+  border-radius: 6px;
+  height: 32px;
+  position: relative;
+  background:
+    linear-gradient(45deg, rgba(255,255,255,0.06) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.06) 75%),
+    linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.06) 75%, transparent 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 4px;
+}
+.css-gradient-preview-track {
+  border-radius: 7px;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+/*
+ * Stop handle — quadradinho 18×18 arrastável no preview.
+ * Cursor pattern literal:
+ *   border: 2px solid #fff;
+ *   box-shadow: 0 1px 3px rgba(0,0,0,.3), inset 0 0 0 1px rgba(0,0,0,.1);
+ *   cursor: grab → grabbing no active
+ *   selected: ring de var(--vscode-tab-unfocusedActiveModifiedBorder)
+ * Position absolute via left:%, transform centraliza no eixo X+Y.
+ */
+.css-gradient-stop-handle {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #fff;
+  border-radius: 3px;
+  cursor: grab;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  transform: translate(-50%, -50%);
+  transition: box-shadow 0.1s ease;
+  z-index: 1;
+}
+.css-gradient-stop-handle:hover {
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+.css-gradient-stop-handle:active {
+  cursor: grabbing;
+}
+.css-gradient-stop-handle.selected {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.css-gradient-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.css-gradient-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+}
+.css-gradient-action-btn:hover {
+  background: var(--bg-active, rgba(255,255,255,0.06));
+  color: var(--fg-default);
+}
+.css-gradient-action-btn .codicon { font-size: 14px; }
+.css-gradient-angle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.css-gradient-angle-input {
+  flex: 0 0 auto;
+  width: 70px;
+  min-width: 70px;
+  padding-right: 14px;
+  position: relative;
+}
+/* Conic: angle input fica mais largo pra acomodar "Start" label */
+.css-gradient-angle-input:has(.css-input-label) {
+  width: 110px;
+  min-width: 110px;
+}
+.css-gradient-angle-input .css-input-suffix { right: 8px; }
+.css-gradient-shape-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+.css-gradient-shape-row .css-button-group {
+  flex: 0 0 auto;
+}
+.css-gradient-shape-row .css-segmented-button { padding: 0 8px; }
+.css-gradient-stops {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.css-gradient-stops-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.css-gradient-stops-header .css-control-label {
+  font-weight: 500;
+  color: var(--fg-default);
+  font-size: 12px;
+}
+.css-gradient-add-stop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+}
+.css-gradient-add-stop:hover {
+  background: var(--bg-active, rgba(255,255,255,0.06));
+  color: var(--fg-default);
+}
+.css-gradient-add-stop .codicon { font-size: 14px; }
+.css-gradient-stop-row {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+  gap: 8px;
+  padding: 4px;
+}
+.css-gradient-stop-position-input {
+  flex: 0 0 auto;
+  min-width: 50px;
+  position: relative;
+  width: 50px;
+}
+.css-gradient-stop-position-input .css-input-suffix { right: 8px; }
+.css-gradient-stop-color-container {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+  padding: 2px 4px;
+  background: var(--bg-input, var(--bg-elevated));
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+}
+.css-gradient-stop-color-container:focus-within { border-color: var(--fg-muted); }
+.css-gradient-stop-color-container .css-color-swatch-inline {
+  border-radius: 4px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+.css-gradient-stop-color-container .css-hex-input {
+  flex: 1;
+  min-width: 50px;
+  padding: 2px 4px;
+}
+.css-gradient-stop-color-container .css-input-separator {
+  background: var(--border-strong);
+  flex-shrink: 0;
+  height: 16px;
+  width: 1px;
+}
+.css-gradient-stop-color-container .css-opacity-input-inline {
+  flex-shrink: 0;
+  width: 48px;
+}
+.css-gradient-stop-color-container .css-opacity-input-inline .css-number-input {
+  padding: 2px 0;
+  text-align: right;
+  width: 28px;
+}
+.css-gradient-stop-color-container .css-input-suffix { padding: 0 2px; }
+.css-gradient-stop-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  outline: none;
+}
+.css-gradient-stop-remove:hover {
+  background: var(--bg-active, rgba(255,255,255,0.06));
+  color: var(--fg-default);
+}
+.css-gradient-stop-remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+.css-gradient-stop-remove .codicon { font-size: 14px; }
+
+/*
+ * Segmented buttons (Circle/Ellipse) — Cursor pattern: active state SUTIL.
+ * Cursor usa cinza-claro (var(--cursor-bg-secondary)) no active, NÃO o accent
+ * vibrante. UNDRCOD: --bg-active / --fg-default pra ficar discreto.
+ */
+.css-segmented-button {
+  flex: 1;
+  background: transparent;
+  color: var(--fg-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  height: 26px;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+.css-segmented-button:hover {
+  background: var(--bg-active, rgba(255, 255, 255, 0.04));
+  color: var(--fg-default);
+}
+.css-segmented-button.active {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+  border-color: var(--border-strong);
+}
+.css-button-group {
+  display: flex;
+  gap: 4px;
+}
+
+/* React sections (Properties + Children) — só renderizam quando há react component */
+.css-react-section .css-section-title {
+  color: var(--accent);  /* destaca que é seção React */
+}
+.css-react-props-list,
+.css-react-children-list {
+  padding: 8px var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.css-react-prop-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.css-react-prop-key {
+  color: var(--fg-default);
+  font-weight: 500;
+}
+.css-react-prop-value {
+  color: var(--fg-muted);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+}
+.css-react-no-props {
+  padding: 8px 0;
+  color: var(--fg-muted);
+  font-style: italic;
+  font-size: 11px;
+}
+.css-react-child-row {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-default);
+  padding: 2px 0;
+}
+.css-react-truncated-notice {
+  padding: 6px 0 0;
+  color: var(--fg-muted);
+  font-size: 10px;
+  font-style: italic;
+}
+
+/* GradientTypeDropdown menu (Solid/Linear/Radial/Conic) */
+.css-gradient-type-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  padding: 4px 0;
+}
+.css-gradient-type-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  color: var(--fg-default);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.css-gradient-type-menu-item:hover { background: rgba(255, 255, 255, 0.05); }
+.css-gradient-type-menu-item.is-active { color: var(--accent); }
+.css-gradient-type-menu-item .codicon { font-size: 12px; color: var(--accent); }
+
+/* Collapsible sections */
+.css-section-header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.css-section-collapse-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--duration-fast);
+}
+.css-section-collapse-toggle:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg-default);
+}
+.css-section-collapse-toggle .codicon { font-size: 12px; }
+
+/* Hide body quando section colapsada (via data-collapsed).
+   Cobre TODAS variantes de body que sections usam (Cursor usa diferentes
+   class names por feature: section-body, stroke-controls, fill-controls, etc) */
+.css-inspector-section[data-collapsed="true"] .css-section-body,
+.css-inspector-section[data-collapsed="true"] > .css-stroke-controls,
+.css-inspector-section[data-collapsed="true"] > .css-fill-controls,
+.css-inspector-section[data-collapsed="true"] > .css-appearance-grid,
+.css-inspector-section[data-collapsed="true"] > .css-position-grid,
+.css-inspector-section[data-collapsed="true"] > .css-typography-controls,
+.css-inspector-section[data-collapsed="true"] > .css-section-body,
+.css-inspector-section[data-collapsed="true"] > details {
+  display: none;
+}
+/* Chevron animação: collapsed rotate (mantém rotation 0 quando expandido) */
+.css-section-collapse-toggle {
+  transform: rotate(0deg);
+  transition: background var(--duration-fast), transform var(--duration-fast);
+}

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 96" width="512" height="96">
+  <title>UNDRCod wordmark — underscore standalone (sem bg)</title>
+  <!-- Logo standalone sem background — pra uso em qualquer cor de fundo.
+       Aspect 16:3 — wide pill format. -->
+  <defs>
+    <filter id="wordmarkGlow" x="-20%" y="-100%" width="140%" height="300%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feFlood flood-color="#4D8BFF" flood-opacity="0.4"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect x="32" y="32" width="448" height="32" rx="16" ry="16"
+        fill="#4D8BFF" filter="url(#wordmarkGlow)"/>
+</svg>

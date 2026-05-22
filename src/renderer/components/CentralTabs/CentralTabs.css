@@ -1,0 +1,211 @@
+/*
+ * CentralTabs — tab bar do pane-mid (editor area).
+ * Estilo VS Code: tabs com border-bottom accent quando ativa.
+ */
+
+.central-tabs {
+  display: flex;
+  align-items: stretch;
+  height: var(--pane-topbar-height);       /* 3 strips iguais — token compartilhado */
+  background: var(--pane-topbar-bg);
+  border-bottom: var(--pane-topbar-border);
+  flex-shrink: 0;
+  /* Anchor pro OverlayScrollbar (sibling do scroll wrapper, position:absolute) */
+  position: relative;
+  /* overflow-x movido pro .central-tabs-scroll filho — tabs scrollam, buttons ficam fixos */
+  overflow: hidden;
+}
+
+/* Empty state — sem tabs, mantém a strip visível pra alinhar com pane-left/right. */
+.central-tabs.is-empty {
+  /* nada extra — só preserva height/bg/border via base rule */
+}
+
+/* Wrapper interno que de fato scrolla as tabs. Spacer + buttons ficam FORA
+ * desse wrapper pra não scrollarem junto. Scrollbar nativa escondida — visual
+ * vai pelo <OverlayScrollbar>. */
+.central-tabs-scroll {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  flex-shrink: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* Firefox */
+}
+.central-tabs .central-tabs-scroll::-webkit-scrollbar {
+  display: none !important;
+  height: 0 !important;
+  width: 0 !important;
+}
+
+/* Spacer empurra o botão "..." pra direita */
+.central-tabs-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Botão "..." (editor group menu) — replica Cursor pattern */
+.central-tabs-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: background 100ms ease-out, color 100ms ease-out;
+}
+.central-tabs-more-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-default);
+}
+.central-tabs-more-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  color: var(--fg-default);
+}
+.central-tabs-more-btn .codicon {
+  font-size: 14px;
+}
+
+/* Keyboard a11y — tabs ganham focus ring quando navegando via Tab key. */
+.central-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.central-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 12px;
+  cursor: pointer;
+  border-right: 1px solid var(--border-subtle);
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  min-width: 0;
+  background: var(--editor-tab-inactive);
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.central-tab:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-secondary);
+}
+
+.central-tab.is-active {
+  background: var(--bg-card);          /* match editor card abaixo — tab ativa "conecta" com o código */
+  color: var(--fg-primary);
+  border-bottom: 1px solid var(--accent);
+  margin-bottom: -1px;
+}
+
+/* Pinned: border-left accent + sem close button (substituído por pin icon).
+ * Visualmente diferenciada pra user saber que close-all não vai fechar. */
+.central-tab.is-pinned {
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;                  /* compensa border pra ícone não colar */
+}
+.central-tab.is-pinned .central-tab-label {
+  font-style: italic;                  /* sutil dica visual extra */
+}
+.central-tab-pin-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.85;
+  transition: opacity var(--duration-fast) var(--ease-out-expo),
+              background var(--duration-fast) var(--ease-out-expo);
+}
+.central-tab-pin-btn:hover {
+  background: var(--bg-active);
+  opacity: 1;
+}
+.central-tab-pin-btn .codicon {
+  font-size: 12px;
+}
+
+.central-tab-icon {
+  font-size: 13px;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+
+.central-tab.is-active .central-tab-icon {
+  color: var(--accent);
+}
+
+.central-tab-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.central-tab-close {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out-expo),
+              background var(--duration-fast) var(--ease-out-expo);
+}
+
+.central-tab:hover .central-tab-close,
+.central-tab.is-active .central-tab-close {
+  opacity: 1;
+}
+
+.central-tab-close:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+
+.central-tab-close .codicon {
+  font-size: 12px;
+}
+
+/* Dirty state — bullet ● substitui o ícone do tipo do arquivo
+ * e o botão close fica meio-visível mesmo sem hover (sinaliza ação destrutiva). */
+.central-tab-dirty-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.central-tab.is-dirty .central-tab-label {
+  font-style: italic;
+}
+
+.central-tab.is-dirty .central-tab-close {
+  opacity: 0.5;
+}
+
+.central-tab.is-dirty:hover .central-tab-close {
+  opacity: 1;
+}

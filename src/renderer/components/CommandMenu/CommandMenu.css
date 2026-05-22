@@ -1,0 +1,148 @@
+/*
+ * CommandMenu — popover de paleta de comandos (Linear/Raycast style)
+ */
+
+.cmdmenu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  max-height: 60vh;
+  overflow: hidden;
+  animation: cmdmenuIn var(--duration-fast) var(--ease-out-expo);
+}
+@keyframes cmdmenuIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.cmdmenu-filter {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: var(--space-3) var(--space-4);
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  outline: none;
+}
+.cmdmenu-filter::placeholder {
+  color: var(--fg-muted);
+}
+
+.cmdmenu-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-1) 0;
+}
+
+.cmdmenu-empty {
+  padding: var(--space-3) var(--space-4);
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.cmdmenu-section {
+  padding: var(--space-1) 0;
+}
+
+.cmdmenu-section-title {
+  padding: var(--space-2) var(--space-4) 4px;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+}
+
+.cmdmenu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 6px var(--space-3);
+  background: transparent;
+  border: none;
+  color: var(--fg-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: background var(--duration-instant) var(--ease-out-expo),
+              color var(--duration-instant) var(--ease-out-expo);
+}
+.cmdmenu-item:hover:not(.is-disabled),
+.cmdmenu-item.is-focused:not(.is-disabled) {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+.cmdmenu-item.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cmdmenu-item-icon {
+  width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--fg-muted);
+}
+.cmdmenu-item-icon .codicon {
+  font-size: 14px;
+}
+.cmdmenu-item:hover .cmdmenu-item-icon,
+.cmdmenu-item.is-focused .cmdmenu-item-icon {
+  color: var(--accent);
+}
+
+.cmdmenu-item-label {
+  flex: 1;
+}
+
+.cmdmenu-item-hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  margin-left: auto;
+}
+
+.cmdmenu-item-disabled {
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  font-style: italic;
+}
+
+.cmdmenu-footer {
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  background: var(--bg-panel);
+}
+
+.cmdmenu-footer kbd {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-secondary);
+  margin-right: 2px;
+}

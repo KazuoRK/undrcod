@@ -1,0 +1,623 @@
+/*
+ * AgentManager — janela chat-focused estilo Antigravity.
+ * Layout: topbar (36px) + body (sidebar 264px + main flex 1).
+ * Visual: clean, sem cores de destaque; tudo transparent + hover sutil.
+ */
+
+.agent-manager {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background: var(--bg-base);
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+}
+
+/* === Topbar ===
+ * Mesma cor do canvas (bg-base) e sem border-bottom — fica "invisível",
+ * só os botões/brand aparecem flutuando sobre o canvas. */
+.agent-mgr-topbar {
+  flex-shrink: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: var(--bg-base);
+  border-bottom: none;
+  -webkit-app-region: drag;
+}
+
+.agent-mgr-topbar-left,
+.agent-mgr-topbar-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+
+/* Center cluster — nav arrows + sidebar toggle.
+ * Posicionado SOBRE a coluna do sidebar (264px width), à direita dentro
+ * dessa região — ou seja, entre o brand (esquerda) e a borda direita
+ * do sidebar. Não passa do limite direito do panel-left. */
+.agent-mgr-topbar-center {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 100px;      /* depois do brand, ainda dentro do sidebar */
+  margin-right: auto;      /* empurra topbar-right pra direita */
+  -webkit-app-region: no-drag;
+}
+
+.agent-mgr-nav-arrow {
+  padding: 4px 6px !important;
+}
+.agent-mgr-nav-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+  background: transparent !important;
+  color: var(--fg-muted) !important;
+}
+
+.agent-mgr-topbar-btn.is-active {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.agent-mgr-topbar-ws {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-mgr-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--fg-secondary);
+}
+
+.agent-mgr-brand-mode {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  padding: 2px 6px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.02em;
+}
+
+.agent-mgr-topbar-btn {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.agent-mgr-topbar-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.agent-mgr-topbar-btn .codicon {
+  font-size: 14px;
+}
+.agent-mgr-topbar-close:hover {
+  background: #e81123;
+  color: white;
+}
+
+/* === Body ===
+ * Bg-base canvas atrás dos cards filhos (mesmo padrão do .main-content-resizable
+ * do editor: padding 6px externo + gap 3px entre panes, com cards arredondados). */
+.agent-mgr-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+  padding: 6px;
+  gap: 3px;
+  background: var(--bg-base);
+}
+
+/* === Sidebar — card flutuante igual .pane-left do editor === */
+.agent-mgr-sidebar {
+  width: 264px;
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: 4px 0 14px rgba(0, 0, 0, 0.20);
+  display: flex;
+  flex-direction: column;
+  padding: 8px 6px;
+  gap: 4px;
+  overflow: hidden;
+  position: relative;
+  z-index: 5;
+}
+
+/* Top + bottom action groups */
+.agent-mgr-top-actions,
+.agent-mgr-bottom-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* Top actions ganham divider embaixo (mesmo estilo do bottom-actions),
+ * separando New Conversation/History do bloco de Workspaces. */
+.agent-mgr-top-actions {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.agent-mgr-bottom-actions {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Nav button — estilo Antigravity: clean, sem cor, hover discreto */
+.agent-mgr-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  color: var(--fg-secondary);
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  text-align: left;
+  width: 100%;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.agent-mgr-nav-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.agent-mgr-nav-btn.is-active {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.agent-mgr-nav-btn .codicon {
+  font-size: 14px;
+  flex-shrink: 0;
+  color: var(--fg-muted);
+}
+.agent-mgr-nav-btn:hover .codicon,
+.agent-mgr-nav-btn.is-active .codicon {
+  color: var(--fg-primary);
+}
+
+/* Section header — "Workspaces" + add button */
+.agent-mgr-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 4px;
+  margin-top: 4px;
+}
+
+.agent-mgr-section-title {
+  font-size: var(--text-2xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  text-transform: none;
+}
+
+.agent-mgr-section-action {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.agent-mgr-section-action:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.agent-mgr-section-action .codicon {
+  font-size: 13px;
+}
+
+/* Workspaces list */
+.agent-mgr-ws-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.agent-mgr-ws {
+  display: flex;
+  flex-direction: column;
+}
+
+.agent-mgr-ws-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--fg-secondary);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  text-align: left;
+  width: 100%;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.agent-mgr-ws-header:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.agent-mgr-ws-header.is-active {
+  color: var(--fg-primary);
+}
+.agent-mgr-ws-header .codicon {
+  font-size: 11px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.agent-mgr-ws-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sessions sob workspace */
+.agent-mgr-sessions {
+  display: flex;
+  flex-direction: column;
+  padding-left: 22px;
+  gap: 1px;
+  margin-top: 1px;
+}
+
+.agent-mgr-session {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  text-align: left;
+  width: 100%;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.agent-mgr-session:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-secondary);
+}
+.agent-mgr-session.is-active {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+
+.agent-mgr-session-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-mgr-session-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.agent-mgr-empty {
+  font-size: var(--text-xs);
+  color: var(--fg-disabled);
+  padding: 8px 10px;
+}
+.agent-mgr-empty-sub {
+  padding: 4px 10px;
+}
+
+/* === Main (Chat area / History) ===
+ * Container TRANSPARENTE — o body por trás é bg-base (canvas), o que faz a
+ * toolbar (também transparente) ficar com a cor da topbar. Só o chat-wrap
+ * vira o "card" visível com bg-panel + radius.
+ * Variante .agent-mgr-main--card volta o card outer pras views de History
+ * e empty-state (precisam de superfície sólida). */
+.agent-mgr-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  overflow: hidden;
+}
+
+/* Wrapper do ChatView dentro do Agent Manager.
+ * Bg-base (mesmo canvas da topbar) — toda a coluna direita vira uma faixa
+ * escura única. O .chatview interno é forçado a transparente abaixo. */
+.agent-mgr-chat-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-base);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Override do .chatview default (que usa bg-panel) — dentro do Agent Manager
+ * a coluna inteira fica em bg-base, sem hierarquia de superfície. */
+.agent-mgr-chat-wrap .chatview {
+  background: transparent;
+}
+
+/* Toolbar slim acima do ChatView — eye + preview buttons (vindo do editor mode).
+ * Mesmo bg do chat (bg-card herdado do .agent-mgr-main) e SEM border-bottom —
+ * só os ícones flutuam, sem linha separando do conteúdo de baixo. */
+.agent-mgr-chat-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+  padding: 0 8px;
+  background: transparent;
+  border-bottom: none;
+}
+
+.agent-mgr-chat-toolbar-btn {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.agent-mgr-chat-toolbar-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.agent-mgr-chat-toolbar-btn.is-active {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.agent-mgr-chat-toolbar-btn .codicon {
+  font-size: 14px;
+}
+.agent-mgr-views-btn .codicon {
+  font-size: 14px;
+}
+.agent-mgr-views-chevron {
+  font-size: 11px !important;
+  opacity: 0.7;
+}
+
+.agent-mgr-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--fg-muted);
+  text-align: center;
+  padding: 32px;
+  background: var(--bg-panel);
+  border-radius: 12px;
+}
+.agent-mgr-empty-state h2 {
+  font-family: var(--font-display, var(--font-body));
+  font-weight: 400;
+  font-size: 22px;
+  color: var(--fg-primary);
+  margin: 0;
+}
+.agent-mgr-empty-state p {
+  font-size: var(--text-sm);
+  max-width: 320px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* === Chat History view ===
+ * Card visível (bg-panel + radius), igual o chat-wrap — main agora é
+ * transparente, então cada sub-view define sua própria superfície. */
+.agent-mgr-history {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 64px 16px;
+  gap: 16px;
+  overflow: hidden;
+  background: var(--bg-panel);
+  border-radius: 12px;
+}
+
+.agent-mgr-history-title {
+  font-family: var(--font-display, var(--font-body));
+  font-weight: 400;
+  font-size: 22px;
+  color: var(--fg-primary);
+  margin: 0;
+}
+
+.agent-mgr-history-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.agent-mgr-history-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.agent-mgr-history-search:focus-within {
+  border-color: var(--border-strong, var(--fg-muted));
+}
+.agent-mgr-history-search .codicon {
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+.agent-mgr-history-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--fg-primary);
+  font-size: var(--text-sm);
+  font-family: var(--font-body);
+}
+.agent-mgr-history-search input::placeholder {
+  color: var(--fg-muted);
+}
+
+.agent-mgr-history-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--fg-secondary);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-family: var(--font-body);
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.agent-mgr-history-filter:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+.agent-mgr-history-filter .codicon {
+  font-size: 13px;
+}
+
+.agent-mgr-history-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.agent-mgr-history-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--fg-secondary);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+.agent-mgr-history-row:hover {
+  background: var(--bg-elevated);
+}
+
+.agent-mgr-history-icon {
+  font-size: 14px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.agent-mgr-history-row-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.agent-mgr-history-row-title {
+  font-size: var(--text-sm);
+  color: var(--fg-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-mgr-history-row-ws {
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+.agent-mgr-history-row-time {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+/* Scrollbar minimalista */
+.agent-mgr-ws-list::-webkit-scrollbar,
+.agent-mgr-history-list::-webkit-scrollbar {
+  width: 6px;
+}
+.agent-mgr-ws-list::-webkit-scrollbar-thumb,
+.agent-mgr-history-list::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 3px;
+}
+.agent-mgr-ws-list::-webkit-scrollbar-thumb:hover,
+.agent-mgr-history-list::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-muted);
+}

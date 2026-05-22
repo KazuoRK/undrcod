@@ -1,0 +1,154 @@
+/*
+ * MarkdownPreview — renderiza .md parsed em vez do MonacoEditor.
+ * Estilo "doc legível" — coluna estreita, hierarquia clara, monospace só pra code.
+ */
+
+.md-preview-root {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--bg-card, var(--editor-canvas));
+  padding: var(--space-6) var(--space-6) var(--space-8);
+}
+
+.md-preview-body {
+  max-width: 760px;
+  margin: 0 auto;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  color: var(--fg-primary);
+}
+
+/* Headings — escala suave, peso forte, espaçamento de respiro */
+.md-preview-body .md-preview-h1,
+.md-preview-body .md-preview-h2,
+.md-preview-body .md-preview-h3,
+.md-preview-body .md-preview-h4,
+.md-preview-body .md-preview-h5,
+.md-preview-body .md-preview-h6 {
+  font-family: var(--font-body);
+  color: var(--fg-primary);
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 1.8em 0 0.6em;
+  letter-spacing: -0.01em;
+}
+.md-preview-body .md-preview-h1:first-child,
+.md-preview-body .md-preview-h2:first-child,
+.md-preview-body .md-preview-h3:first-child {
+  margin-top: 0;
+}
+
+.md-preview-body .md-preview-h1 {
+  font-size: 1.9em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--editor-canvas, rgba(255, 255, 255, 0.08));
+}
+.md-preview-body .md-preview-h2 {
+  font-size: 1.45em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--editor-canvas, rgba(255, 255, 255, 0.06));
+}
+.md-preview-body .md-preview-h3 { font-size: 1.2em; }
+.md-preview-body .md-preview-h4 { font-size: 1.05em; }
+.md-preview-body .md-preview-h5 { font-size: 0.95em; color: var(--fg-muted); }
+.md-preview-body .md-preview-h6 {
+  font-size: 0.85em;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Parágrafos */
+.md-preview-body .md-preview-p {
+  margin: 0 0 1em;
+  color: var(--fg-primary);
+}
+
+/* Inline code — destaca discreto, monospace */
+.md-preview-body .md-preview-code-inline {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  background: var(--editor-canvas, rgba(255, 255, 255, 0.07));
+  border: 1px solid var(--editor-bg, rgba(255, 255, 255, 0.05));
+  color: var(--fg-primary);
+}
+
+/* Code blocks */
+.md-preview-body .md-preview-pre {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  line-height: 1.55;
+  padding: var(--space-3) var(--space-4);
+  margin: 0 0 1.2em;
+  background: var(--editor-bg, rgba(0, 0, 0, 0.35));
+  border: 1px solid var(--editor-canvas, rgba(255, 255, 255, 0.06));
+  border-radius: 6px;
+  overflow-x: auto;
+  color: var(--fg-primary);
+  white-space: pre;
+}
+.md-preview-body .md-preview-pre code {
+  font-family: inherit;
+  font-size: inherit;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+
+/* Listas */
+.md-preview-body .md-preview-ul,
+.md-preview-body .md-preview-ol {
+  margin: 0 0 1em;
+  padding-left: 1.6em;
+}
+.md-preview-body .md-preview-ul li,
+.md-preview-body .md-preview-ol li {
+  margin-bottom: 0.3em;
+}
+.md-preview-body .md-preview-ul { list-style-type: disc; }
+.md-preview-body .md-preview-ol { list-style-type: decimal; }
+
+/* Blockquote */
+.md-preview-body .md-preview-blockquote {
+  margin: 0 0 1em;
+  padding: 0.4em 0 0.4em var(--space-4);
+  border-left: 3px solid var(--accent, #c5a572);
+  color: var(--fg-muted);
+  background: var(--editor-canvas, rgba(255, 255, 255, 0.03));
+  border-radius: 0 4px 4px 0;
+  font-style: italic;
+}
+.md-preview-body .md-preview-blockquote > :last-child { margin-bottom: 0; }
+
+/* Hr */
+.md-preview-body .md-preview-hr {
+  border: none;
+  border-top: 1px solid var(--editor-canvas, rgba(255, 255, 255, 0.1));
+  margin: 2em 0;
+}
+
+/* Links — accent UNDRCOD */
+.md-preview-body a {
+  color: var(--accent, #c5a572);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.12s ease;
+}
+.md-preview-body a:hover {
+  border-bottom-color: var(--accent, #c5a572);
+}
+
+/* strong / em discretos */
+.md-preview-body strong {
+  color: var(--fg-primary);
+  font-weight: 600;
+}
+.md-preview-body em {
+  font-style: italic;
+  color: var(--fg-primary);
+}

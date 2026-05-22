@@ -1,0 +1,1424 @@
+/*
+ * UNDRCOD — design system v4
+ *
+ * Register: PRODUCT (productivity tool, high-frequency daily use).
+ * Reference vibe: Linear / Raycast / Warp — dark neutral, single accent,
+ *                 hierarchy clarity, information density.
+ *
+ * Brand colors:
+ *   Antigravity Blue #4F8FFA  — único accent público (focus, CTA, links, status).
+ *   Warm Cream      #F2ECE3   — texto primário sobre superfícies dark.
+ *
+ * Typography:
+ *   Geist Sans       UI default (loaded via Google Fonts).
+ *   Geist Mono       code, kbd chips, metadata.
+ *   Fraunces         display/serif pro hero, welcome title, splash.
+ *   Fallback chain   Segoe UI / system-ui / ui-monospace / Georgia.
+ */
+
+/* Google Fonts — Geist (sans + mono) + Fraunces (display).
+   Loaded once em :root so all components inherit. */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap');
+
+/* === Keyboard shortcut chips — GLOBAL STYLE ===
+ * Padrão UNDRCOD: cada token (Ctrl, Shift, K, ⇧) renderiza como chip
+ * separado dentro de uma .kbd-row. Nunca strings concatenadas tipo "Ctrl+K".
+ * Aplicável em: popovers, tooltips, menus, status bar, command palette.
+ *
+ * Uso:
+ *   <span class="kbd-row">
+ *     <kbd class="kbd">Ctrl</kbd>
+ *     <kbd class="kbd">K</kbd>
+ *   </span>
+ *
+ * Aliases retro-compat: composer-popover-shortcut/kbd, transcript-view-kbd
+ * (mantidos por enquanto, mas novos componentes devem usar .kbd / .kbd-row).
+ */
+.kbd-row,
+.composer-popover-shortcut,
+.transcript-view-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+
+.kbd,
+.composer-popover-kbd,
+.transcript-view-kbd {
+  background: var(--kbd-bg, #1a1a1a);
+  color: var(--fg-secondary);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 1.3;
+  min-width: 18px;
+  text-align: center;
+  border: 1px solid var(--kbd-border, #3a3a3a);
+  font-weight: 400;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* === Wordmark — `_UNDRCOD` com cursor-block piscando ===
+ * Uso:
+ *   <span class="wordmark"><span class="wordmark-u">_</span>UNDRCOD</span>
+ * O `_` (texto) é escondido e renderizado como um cursor-block sólido azul
+ * que pulsa sem nunca desaparecer (opacity 1 → 0.25 → 1). Garante visibilidade
+ * em qualquer fonte mono e em qualquer frame da animação.
+ * Variante `.wordmark-sm` reduz proporção pra status bar / footer.
+ */
+.wordmark {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: baseline;
+  color: inherit;
+  white-space: nowrap;
+}
+.wordmark-u {
+  /* hide the underscore char; render a solid bar instead */
+  display: inline-block;
+  position: relative;
+  width: 0.55em;
+  margin-right: 0.18em;
+  color: transparent;            /* hide the `_` glyph */
+  user-select: none;
+}
+.wordmark-u::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0.08em;
+  width: 100%;
+  height: 0.18em;
+  background: var(--accent);
+  border-radius: 2px;
+  animation: undrcod-blink 1.1s steps(2) infinite;
+}
+.wordmark-sm { font-size: 0.92em; }
+@keyframes undrcod-blink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wordmark-u::after { animation: none; opacity: 1; }
+}
+
+/* === Codicons utility === */
+.codicon {
+  font-size: 14px;
+  line-height: 1;
+  vertical-align: middle;
+}
+.codicon-sm { font-size: 12px; }
+.codicon-lg { font-size: 18px; }
+.codicon-xl { font-size: 24px; }
+
+/*
+ * Theme — UNDRCOD único.
+ *
+ *   :root + html[data-theme="undrcod"]    — tema canônico (dark + Antigravity Blue).
+ *   html[data-theme="antigravity-dark"]   — alias legado pro mesmo tema.
+ *   html[data-theme="champagne"]          — alias legado pro mesmo tema.
+ *
+ * Os aliases existem só pra não quebrar localStorage de instalações antigas;
+ * eles caem no :root via cascade (sem overrides próprios).
+ *
+ * Tokens semânticos (aliases automáticos no fim deste arquivo):
+ *   --bg-primary    = --bg-base      (root canvas)
+ *   --surface-1     = --bg-panel     (sidebar/topbar)
+ *   --surface-2     = --bg-elevated  (hover/dropdown)
+ *   --surface-3     = --bg-active    (active item)
+ *   --text-primary  = --fg-primary
+ *   --text-muted    = --fg-muted
+ *   --accent-success = --green
+ *   --border-color  = --border-subtle
+ */
+
+/* Compat: aliases legados apontam pro :root (sem overrides — usam cascade). */
+html[data-theme="antigravity-dark"],
+html[data-theme="champagne"],
+html[data-theme="undrcod"] {
+  color-scheme: dark;
+}
+
+:root,
+html[data-theme="undrcod"] {
+  /* =========================================================================
+   * UNDRCODE DESIGN SYSTEM — v4 (Antigravity Blue brand)
+   *
+   * Estrutura:
+   *   1. Surfaces / Backgrounds (UI panels + editor canvas)
+   *   2. Borders
+   *   3. Foreground (texto)
+   *   4. Accent — Antigravity Blue (escala 50–900 + tokens semânticos)
+   *   5. Status palette (red/orange/gold/green/blue/violet × 10 shades)
+   *   6. Tipografia (Geist + Fraunces + rem scale 11→41px)
+   *   7. Spacing (4px grid)
+   *   8. Border-radius (VS Code-style 2px base)
+   *   9. Motion
+   *   10. Elevation
+   *   11. Breakpoints (responsive tokens)
+   *
+   * Único tema = "undrcod" (dark + Antigravity Blue). Aliases legados
+   * (antigravity-dark, champagne) caem no mesmo bloco via cascade.
+   * ========================================================================= */
+
+  /* === 1. SURFACES — cool dark === */
+  --bg-base: #0d0d0d;                       /* root canvas — fundo "atrás" dos cards */
+  --bg-panel: #141414;                      /* topbar, statusbar (fora dos cards) */
+  --bg-card:  #1a1a1a;                      /* cards flutuantes (pane-left, pane-right, chatview) */
+  --bg-elevated: #1f1f1f;                   /* hover, dropdown, popover */
+  --bg-input: #161616;                      /* input bg */
+  --bg-active: #262626;                     /* active item */
+  --bg-hover-dropdown: #2a2a2a;             /* hover de dropdowns/select (Cursor: --cursor-bg-quaternary) */
+
+  /* Editor canvas — cool dark */
+  --editor-canvas: #0f0f0f;                 /* code area bg */
+  --editor-bg: #141414;                     /* tab bar / breadcrumbs */
+  --editor-tab-inactive: #1c1c1c;           /* tab não focada */
+
+  /* Surface scale 50–900 (escala neutra completa, Antigravity-mapped) */
+  --surface-50: #f6f6f7;
+  --surface-100: #e1e4e6;
+  --surface-200: #c3c8cc;
+  --surface-300: #9da5ab;
+  --surface-400: #788189;
+  --surface-500: #5d676f;
+  --surface-600: #495158;
+  --surface-700: #3d4348;
+  --surface-800: #33383c;
+  --surface-900: #1d1f21;
+
+  /* === 2. BORDERS === */
+  --border-subtle: #232328;
+  --border-strong: #34343a;
+  --border-focus: var(--accent);
+
+  /* === 3. FOREGROUND — neutral cool === */
+  --fg-primary: #e4e4e7;
+  --fg-secondary: #b8b8bd;
+  --fg-muted: #7a7a82;
+  --fg-tertiary: #5e5e64;                    /* muted suffix px/% (Cursor: --cursor-text-tertiary) */
+  --fg-disabled: #4d4d52;
+  /* Alias pra compat com PreviewView.css que usa --fg-default */
+  --fg-default: var(--fg-primary);
+
+  /* === 4. ACCENT — Antigravity Blue (UNDRCOD brand) === */
+  --accent-50:  #eff4ff;
+  --accent-100: #dbe6ff;
+  --accent-200: #b8ccff;
+  --accent-300: #8eb0ff;
+  --accent-400: #6a99ff;
+  --accent-500: #4F8FFA;                     /* DEFAULT — Antigravity Blue */
+  --accent-600: #3573e6;
+  --accent-700: #2a5cbb;
+  --accent-800: #234a96;
+  --accent-900: #1c3a76;
+
+  /* Gradient primary */
+  --accent-gradient: linear-gradient(135deg, #4F8FFA 0%, #6FA6FF 100%);
+
+  /* Semantic aliases */
+  --accent: var(--accent-500);
+  --accent-hover: #6FA6FF;
+  --accent-soft: color-mix(in oklab, var(--accent-500) 14%, transparent);
+  --accent-glow: rgba(79, 143, 250, 0.22);
+
+  /* === Neutral/tonal tokens === */
+  --cream: #e4e4e7;                          /* nome legacy = primary text */
+  --charcoal: #0d0d0d;
+  --graphite: #141414;
+  --muted-sand: #2a2a2e;
+
+  /* === 5. STATUS PALETTE — 6 cores × 10 shades (Antigravity exact hex) === */
+
+  /* Red — erros, destruktiv */
+  --red-50:  #fdf3f3;
+  --red-100: #fbe5e5;
+  --red-200: #f9cfcf;
+  --red-300: #f3aeae;
+  --red-400: #ea7f7f;
+  --red-500: #de5555;
+  --red-600: #cb3d3d;                        /* DEFAULT */
+  --red-700: #a92c2c;
+  --red-800: #8c2828;
+  --red-900: #752727;
+
+  /* Orange — warnings, alerta */
+  --orange-50:  #fdf6ef;
+  --orange-100: #faebda;
+  --orange-200: #f5d3b3;
+  --orange-300: #eeb683;
+  --orange-400: #e8975f;                     /* DEFAULT */
+  --orange-500: #e0712f;
+  --orange-600: #d25924;
+  --orange-700: #ae4320;
+  --orange-800: #8b3721;
+  --orange-900: #70301e;
+
+  /* Gold — atenção, destaque */
+  --gold-50:  #faf9ec;
+  --gold-100: #f2f1cf;
+  --gold-200: #e6e1a2;
+  --gold-300: #d8cc6c;
+  --gold-400: #cab43e;                       /* DEFAULT */
+  --gold-500: #bca136;
+  --gold-600: #a2812c;
+  --gold-700: #826026;
+  --gold-800: #6d4f26;
+  --gold-900: #5e4225;
+
+  /* Green — success, pronto */
+  --green-50:  #f6f9f4;
+  --green-100: #e9f3e5;
+  --green-200: #d4e6cc;
+  --green-300: #b0d2a3;
+  --green-400: #7aae66;                      /* DEFAULT */
+  --green-500: #63984f;
+  --green-600: #4e7c3d;
+  --green-700: #406233;
+  --green-800: #354f2c;
+  --green-900: #2c4225;
+
+  /* Blue — info, links */
+  --blue-50:  #f4f7fb;
+  --blue-100: #e7eff7;
+  --blue-200: #cadced;
+  --blue-300: #9cbedd;
+  --blue-400: #6a9fcb;                       /* DEFAULT */
+  --blue-500: #4380b4;
+  --blue-600: #316698;
+  --blue-700: #29527b;
+  --blue-800: #254667;
+  --blue-900: #243d56;
+
+  /* Violet — accent secundário, AI */
+  --violet-50:  #fbf8fc;
+  --violet-100: #f6eef9;
+  --violet-200: #efe0f4;
+  --violet-300: #e2c8ea;
+  --violet-400: #cea5db;
+  --violet-500: #bb84cc;                     /* DEFAULT */
+  --violet-600: #a665b8;
+  --violet-700: #8f519f;
+  --violet-800: #764683;
+  --violet-900: #60396a;
+
+  /* Semantic aliases (compat — apontam pro shade DEFAULT) */
+  --red: var(--red-600);
+  --orange: var(--orange-400);
+  --gold: var(--gold-400);
+  --green: var(--green-400);
+  --blue: var(--blue-400);
+  --violet: var(--violet-500);
+  --yellow: var(--gold-400);                 /* legacy alias */
+
+  /* === 6. TYPOGRAPHY === */
+
+  /* Font stacks — Geist (UI/sans), Geist Mono (code), Fraunces (display).
+     System fallbacks: Segoe UI / Consolas / Georgia.
+     Loaded via @import at the top of this file. */
+  --font-body: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Display', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+  --font-mono: 'Geist Mono', Consolas, 'Courier New', ui-monospace, monospace;
+  --font-display: 'Fraunces', ui-serif, Georgia, 'Times New Roman', serif;
+
+  /* Scale rem-based (Antigravity progression, root 16px) */
+  --text-2xs: 0.625rem;    /* 10px — legado */
+  --text-xs:  0.688rem;    /* 11px */
+  --text-sm:  0.75rem;     /* 12px */
+  --text-base: 0.813rem;   /* 13px — VS Code UI default */
+  --text-md:  0.875rem;    /* 14px — VS Code editor default */
+  --text-lg:  1rem;        /* 16px */
+  --text-xl:  1.15rem;     /* 18.4px */
+  --text-2xl: 1.363rem;    /* 21.8px */
+  --text-3xl: 1.753rem;    /* 28px */
+  --text-4xl: 2.041rem;    /* 32.6px */
+  --text-5xl: 2.552rem;    /* 40.8px */
+
+  /* === 7. SPACING (4px grid) === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 36px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* === Pane top strips (FileTree header / CentralTabs / ChatView toolbar) ===
+   * Tokens compartilhados pra garantir as 3 strips visualmente idênticas.
+   * Mudar aqui afeta os 3 panes ao mesmo tempo. */
+  --pane-topbar-height: 36px;
+  --pane-topbar-bg: var(--bg-elevated);  /* tom mais claro — igual ao original do pane-left icons bar */
+  --pane-topbar-border: 1px solid var(--border-subtle);
+
+  /* === 8. BORDER-RADIUS (VS Code-style minimal) === */
+  /* === Border radius scale (bumped v4: gabarito = Welcome cards 12-16px) ===
+   * Antes era denso/VS-Code-style (2/4/6/8/10). Agora reflete Welcome/Linear/Raycast.
+   * Visual: cards arejados, modais com canto generoso, pills mantém 9999.
+   * Migration: componentes usando os tokens herdam automaticamente; valores hardcoded
+   * legados ficam até token-cleanup batch (Frente 4). */
+  --radius-sm: 4px;        /* inputs inline, code spans, chips finos */
+  --radius-md: 6px;        /* buttons, tree items, file rows */
+  --radius-lg: 8px;        /* cards pequenos, dropdowns, status pills */
+  --radius-xl: 10px;       /* messages, terminal, tool cards */
+  --radius-2xl: 12px;      /* cards principais (Welcome standard) */
+  --radius-3xl: 16px;      /* modais/hero/cards grandes (Onboarding card) */
+  --radius-pill: 9999px;   /* status badges, capsules */
+
+  /* === 9. MOTION === */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --duration-instant: 80ms;
+  --duration-fast: 140ms;
+  --duration-base: 180ms;
+  --duration-slow: 280ms;
+
+  /* === 10. ELEVATION === */
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.20);
+  --shadow-md: 0 4px 14px oklch(0 0 0 / 0.28);
+  --shadow-lg: 0 12px 28px oklch(0 0 0 / 0.34);
+
+  /* === 11. BREAKPOINTS (responsive tokens) === */
+  /* Sidebar/panel-level breakpoints (Antigravity ws-* convention) */
+  --bp-ws-xs: 16rem;       /* 256px — sidebar compacta */
+  --bp-ws-sm: 22rem;       /* 352px — sidebar normal */
+  --bp-ws-md: 30rem;       /* 480px — sidebar larga */
+  /* Window/viewport breakpoints */
+  --bp-xs: 25rem;          /* 400px */
+  --bp-sm: 40rem;          /* 640px */
+  --bp-md: 48rem;          /* 768px */
+  --bp-lg: 64rem;          /* 1024px */
+  --bp-xl: 80rem;          /* 1280px */
+  --bp-2xl: 96rem;         /* 1536px */
+
+  /* === 12. SEMANTIC ALIASES — usados pelo seletor de tema =================
+   * Aliases neutros (sem referência a "bg" vs "surface") pra novos componentes.
+   * Cada tema redefine os tokens-fonte (--bg-base, --fg-primary, etc) e estes
+   * aliases acompanham automaticamente via var() chaining.
+   * ====================================================================== */
+  --bg-primary: var(--bg-base);
+  --surface-1: var(--bg-panel);
+  --surface-2: var(--bg-elevated);
+  --surface-3: var(--bg-active);
+  --text-primary: var(--fg-primary);
+  --text-muted: var(--fg-muted);
+  --accent-success: var(--green);
+  --border-color: var(--border-subtle);
+}
+
+/* === Reset === */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  background: var(--bg-base);
+  color: var(--fg-primary);
+  user-select: none;
+  /* VS Code Windows usa subpixel rendering padrão — antialiased deixa Consolas fina demais */
+  -webkit-font-smoothing: auto;
+  text-rendering: optimizeLegibility;
+}
+
+/* Garante mono Consolas em TODOS os contextos de código */
+pre, code, kbd, samp,
+.codicon,
+[class*='language-'],
+.file-preview-code,
+.file-preview-code *,
+.msg-code,
+.cmdmenu-filter,
+.statusbar,
+.statusbar *,
+.topbar-cwd,
+.filetree-cwd {
+  font-family: var(--font-mono);
+}
+
+.codicon {
+  font-family: 'codicon' !important;
+}
+
+/*
+ * === Native <select>/<option> normalizer ===
+ *
+ * Chromium em Windows usa o popup nativo do OS pra <select>. Mesmo com
+ * `option:checked { background }` na CSS, o item highlighted (hover/focused)
+ * pinta com o azul system (#0078D4 / SystemHighlight) — Rafael reportou
+ * "dropdowns ficam azul quando opção selecionada".
+ *
+ * Fix: força `color-scheme: dark` (dispara o chrome dark do popup) e
+ * `accent-color: var(--accent)` (controla o highlight bar). Aplicado a TODOS
+ * os <select>/<option> globalmente pra cobrir nativos espalhados pelo app
+ * (CSS Inspector, FontWeight, NumInput unit, Border style, etc).
+ */
+select,
+option {
+  color-scheme: dark;
+  /* NÃO usa var(--accent) — no theme default --accent é Antigravity Blue
+   * (#4F8FFA), o que reintroduziria azul. Usa neutral bg-active pra OS
+   * highlight bar ficar invisível/neutro. */
+  accent-color: var(--bg-active);
+}
+select option {
+  background-color: var(--bg-elevated) !important;
+  color: var(--fg-primary) !important;
+}
+select option:checked,
+select option:hover,
+select option:focus,
+select option:active {
+  background-color: var(--bg-active) !important;
+  background: var(--bg-active) linear-gradient(0deg, var(--bg-active), var(--bg-active)) !important;
+  color: var(--fg-primary) !important;
+  box-shadow: 0 0 10px 100px var(--bg-active) inset !important;
+}
+
+/* === Layout === */
+
+.app {
+  height: 100%;
+  display: flex;
+}
+
+.app-full {
+  flex-direction: column;
+}
+
+/* === Splash (boot, raro) === */
+
+.splash {
+  margin: auto;
+  text-align: center;
+  max-width: 420px;
+  padding: var(--space-5);
+}
+.logo {
+  font-size: 28px;
+  line-height: 1;
+  color: var(--accent);
+  margin-bottom: var(--space-3);
+}
+.splash h1 {
+  font-family: var(--font-body);
+  font-size: var(--text-xl);
+  margin: 0 0 var(--space-1) 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+}
+.tagline {
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+  margin: 0;
+}
+
+/* === Topbar — Antigravity-style (custom titlebar) === */
+
+.topbar {
+  flex-shrink: 0;
+  height: 35px;                           /* Antigravity exact (titleBarHeight) */
+  background: var(--bg-base);             /* match canvas atrás dos cards */
+  border-bottom: 1px solid var(--border-subtle);  /* linha visível separando do canvas dos cards */
+  display: flex;
+  align-items: center;
+  padding-left: var(--space-3);
+  padding-right: 0;
+  gap: var(--space-3);
+  -webkit-app-region: drag;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;                            /* compacto — match topbar-right pra consistência */
+  -webkit-app-region: no-drag;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+.topbar-center {
+  flex: 1;
+  text-align: center;
+  overflow: hidden;
+  -webkit-app-region: drag;              /* centro é draggable */
+}
+
+.topbar-logo {
+  color: var(--accent);
+  font-size: 16px !important;
+  line-height: 1;
+}
+
+/* Menu inline (File Edit View ...) */
+.topbar-menu {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  -webkit-app-region: no-drag;
+}
+
+.topbar-menu-item {
+  background: transparent;
+  border: none;
+  color: var(--fg-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  line-height: 1;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.topbar-menu-item:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+/* Navigation arrows (back/forward) — depois dos menus, antes do título central. */
+.topbar-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 8px;
+  -webkit-app-region: no-drag;
+}
+.topbar-nav-btn {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.topbar-nav-btn:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.topbar-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.topbar-nav-btn .codicon {
+  font-size: 14px;
+}
+
+/* Texto central (project · file) */
+.topbar-title-text {
+  font-family: var(--font-body);
+  color: var(--fg-secondary);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+  user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+/* Action button (Agent Manager — primary) */
+.topbar-action {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--fg-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  padding: 5px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+  margin-right: 8px;
+}
+.topbar-action:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+  color: var(--fg-primary);
+}
+.topbar-action-primary {
+  /* equivalente ao "Open Agent Manager" do Antigravity */
+}
+
+/* Action icon button (sidebar/panel/secondary/search/settings) */
+.topbar-action-icon {
+  background: transparent;
+  border: none;
+  color: var(--fg-secondary);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.topbar-action-icon:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.topbar-action-icon .codicon {
+  font-size: 14px;
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-subtle);
+  margin: 0 4px;
+}
+
+/*
+ * Responsive: esconde ícones progressivamente quando janela encolhe.
+ * hide-on-md  — esconde abaixo de 1100px (low priority)
+ * hide-on-sm  — esconde abaixo de  900px (lower priority)
+ *
+ * Mantem sempre visiveis (mesmo no menor breakpoint):
+ *   logo, file menu, sidebar-left, sidebar-right (Agent), settings, account,
+ *   window controls
+ */
+@media (max-width: 1100px) {
+  .hide-on-md {
+    display: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .hide-on-sm,
+  .hide-on-md {
+    display: none !important;
+  }
+}
+
+/* Visualizacoes button (no chatview-toolbar) — icon + chevron-down inline */
+.chatview-views-btn {
+  width: auto !important;
+  padding: 0 4px 0 6px !important;
+  gap: 0;
+}
+.chatview-views-chevron {
+  font-size: 11px !important;
+  opacity: 0.7;
+  margin-left: -2px;
+}
+
+/* Account avatar button (R + chevron) */
+.topbar-account-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px 2px 2px;
+  border-radius: var(--radius-md);
+  color: var(--fg-secondary);
+  transition: background var(--duration-fast) var(--ease-out-expo);
+  -webkit-app-region: no-drag;
+}
+.topbar-account-btn:hover {
+  background: var(--bg-elevated);
+}
+.topbar-account-btn.is-active {
+  background: var(--bg-active);
+}
+.topbar-account-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #2da568; /* verde Antigravity */
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.topbar-account-chevron {
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+/* === Window controls (custom min/max/close) === */
+
+.window-controls {
+  display: flex;
+  align-items: stretch;
+  height: 35px;                          /* match topbar (Antigravity exact) */
+  margin-left: var(--space-2);
+  -webkit-app-region: no-drag;
+}
+
+.window-control {
+  width: 46px;
+  height: 35px;
+  background: transparent;
+  border: none;
+  color: var(--fg-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.window-control:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.window-control-close:hover {
+  background: #c42b1c;                   /* vermelho Windows-native pra close */
+  color: #ffffff;
+}
+
+.window-control svg {
+  display: block;
+}
+.topbar-cwd {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  letter-spacing: 0.01em;
+}
+.topbar-cwd-button {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color var(--duration-fast) var(--ease-out-expo),
+              background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+.topbar-cwd-button:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+  border-color: var(--border-strong);
+}
+.topbar-cwd-button .codicon {
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* === Status badge === */
+
+.status-badge {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+  text-transform: lowercase;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-input);
+  color: var(--fg-muted);
+  border: 1px solid var(--border-subtle);
+}
+.status-badge.status-starting,
+.status-badge.status-thinking { color: var(--yellow); }
+.status-badge.status-running,
+.status-badge.status-ready { color: var(--green); }
+.status-badge.status-error { color: var(--red); }
+.status-badge.status-exited { color: var(--fg-muted); }
+
+/* === Main content === */
+
+.main-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Layout 3 colunas: FileTree | FilePreview (opcional) | ChatView
+ * Larguras alinhadas com escala --bp-ws-* (Antigravity convention):
+ *   pane-left  = bp-ws-xs (≈ 256px)
+ *   pane-mid   = bp-ws-sm (≈ 352px) min, cresce
+ *   pane-right = bp-ws-md (≈ 480px) min, cresce com ratio 1
+ */
+/*
+ * Layout horizontal com 3-4 colunas + Splitters entre elas.
+ * Widths controlados via inline style (state em React),
+ * persistidos em localStorage. Splitter components fazem o drag-resize.
+ */
+.main-content-resizable {
+  display: flex;
+  overflow: hidden;
+  position: relative;  /* âncora pro pane-right absolute (slide-over) */
+  padding: 6px;        /* gap externo das bordas (mantido) */
+  gap: 3px;            /* gap ENTRE panels reduzido (era 6px) */
+  background: var(--bg-base);
+}
+/* Primary sidebar tabs (Arquivos / Git) */
+.pane-left-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  border-bottom: var(--pane-topbar-border);
+  background: var(--pane-topbar-bg);
+}
+.pane-left-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #888);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+.pane-left-tab:hover {
+  color: var(--text-primary, #e0e0e0);
+  background: var(--surface-3, #252525);
+}
+.pane-left-tab.is-active {
+  color: var(--accent, #e97b52);
+  border-bottom-color: var(--accent, #e97b52);
+  /* Sobrepõe o border-bottom 1px do .pane-left-tabs container — pra blue ficar
+   * COLADO na borda do panel sem hairline gray no meio. */
+  margin-bottom: -1px;
+  position: relative;
+  z-index: 1;
+}
+
+/* === Icon-only tab variant (barra de ícones tipo VS Code/Cursor) === */
+.pane-left-tabs-icons {
+  justify-content: center;            /* centraliza os ícones no espaço disponível */
+  align-items: center;                /* centraliza vertical na altura da barra */
+  gap: 2px;                           /* pequeno respiro entre ícones */
+  height: var(--pane-topbar-height);  /* 36px — match central-tabs / chatview-toolbar */
+  padding: 0 6px;                     /* padding lateral pra não colar nas bordas */
+  background: var(--pane-topbar-bg);
+  border-bottom: none;              /* sem linha entre icons bar e filetree-header (transição direta) */
+}
+.pane-left-tab.pane-left-tab-icon {
+  flex: 0 0 auto;
+  width: 24px;                      /* compacto — match Cursor activity bar density */
+  height: 24px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  border-bottom: none;            /* sem underline — active state usa bg */
+  text-transform: none;
+  letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.pane-left-tab.pane-left-tab-icon .codicon {
+  font-size: 14px;
+}
+.pane-left-tab.pane-left-tab-icon:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.pane-left-tab.pane-left-tab-icon.is-active {
+  color: var(--accent);
+  background: var(--bg-elevated);
+  margin-bottom: 0;               /* override do margin-bottom: -1px do .is-active default */
+  border-bottom: none;
+}
+.pane-left-tab.pane-left-tab-icon:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.pane-left-tab .codicon { font-size: 13px; }
+.pane-left-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Stack vertical: FileTree (cresce) + OutlineSection (encolhe abaixo). */
+.pane-left-files-stack {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.pane-left-files-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.main-content-resizable .pane-left {
+  /* width via inline style (state) */
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  /* Card flutuante — cantos arredondados em todos os 4 lados, sombra suave. */
+  position: relative;
+  z-index: 5;
+  background: var(--bg-card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 4px 0 14px rgba(0, 0, 0, 0.20);
+}
+.main-content-resizable .pane-mid {
+  flex: 1;                                /* ocupa espaco restante entre splitters */
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;                  /* editor em cima, bottom panel embaixo */
+  min-height: 0;
+  gap: 3px;                                /* gap entre editor e bottom-panel (era margin nos filhos) */
+  background: var(--bg-base);              /* canvas escuro — dá contraste pros cards filhos */
+}
+
+/* Editor area dentro do pane-mid — card flutuante com mesmo estilo dos outros panes:
+ * radius 12px, bg-card, margin 3px do pane-mid (que é bg-base canvas atrás).
+ * O Monaco interno herda essa moldura via overflow: hidden. */
+.pane-mid-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0;
+  background: var(--bg-card);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/*
+ * Split editor — 2 grupos lado-a-lado (horizontal) ou cima-embaixo (vertical).
+ * Cursor pattern (workbench.action.splitEditor): cada grupo é independente,
+ * com suas próprias tabs + content. Divisor entre eles via <Splitter/>.
+ */
+.pane-mid-split {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+.pane-mid-split.pane-mid-split-horizontal {
+  flex-direction: row;
+}
+.pane-mid-split.pane-mid-split-vertical {
+  flex-direction: column;
+}
+.pane-mid-split-group {
+  /* flex é controlado inline via style={{ flex: `${pct} 1 0` }} no App.tsx
+     pra suportar resize dinâmico via Splitter. Default 50/50. */
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+/* Grupo focado tem leve highlight no top — feedback visual sutil de qual está ativo. */
+.pane-mid-split-group.is-focused::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Empty state quando nenhum arquivo aberto */
+.pane-mid-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  color: var(--fg-muted);
+  padding: var(--space-5);
+}
+.pane-mid-empty-icon {
+  opacity: 0.4;
+}
+.pane-mid-empty-title {
+  color: var(--fg-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 500;
+}
+.pane-mid-empty-hint {
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  text-align: center;
+  max-width: 320px;
+}
+.pane-mid-empty-link {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  font: inherit;
+}
+.pane-mid-empty-link:hover {
+  color: var(--accent-hover, var(--accent));
+}
+.main-content-resizable .pane-right {
+  /* width via inline style (state) — fica no flex flow normal pro Splitter funcionar. */
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: -4px 0 14px rgba(0, 0, 0, 0.20);
+}
+/* pane-extra (4a coluna) removido — views agora vivem no Bottom Panel */
+
+/*
+ * Bottom Panel — VIVE DENTRO do pane-mid (entre as sidebars, não atravessando).
+ * pane-mid eh uma coluna vertical: .pane-mid-editor (flex:1) + Splitter + .bottom-panel.
+ */
+.bottom-panel {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Wrapper transparente — o card visual vive em .bottom-panel-root (BottomPanel.css).
+   * Sem margin: o gap vertical entre .pane-mid-editor e .bottom-panel vem do
+   * `gap: 3px` no .pane-mid. Assim o card pane-mid fica flush com pane-left/right
+   * (mesma altura visual). */
+  margin: 0;
+}
+.bottom-panel .right-pane {
+  width: 100% !important;
+  height: 100%;
+  border-left: none;
+}
+
+/* Topbar icon active state */
+.topbar-action-icon.is-active {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+
+/* (dead-code removido: seletor .main-content-3col não existe no DOM.
+    Estilos do slide-over agora vivem em .main-content-resizable .pane-right acima.) */
+
+.chatview-toolbar {
+  display: flex;
+  align-items: center;
+  height: var(--pane-topbar-height);       /* 3 strips iguais — token compartilhado */
+  padding: 0 6px;
+  background: var(--pane-topbar-bg);
+  border-bottom: var(--pane-topbar-border);
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.chatview-toolbar-spacer {
+  flex: 1;
+}
+
+.chatview-toolbar-btn {
+  background: transparent;
+  border: none;
+  width: 28px;
+  height: 24px;
+  border-radius: 4px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.chatview-toolbar-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.chatview-toolbar-btn.is-active {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+
+.chatview-toolbar-btn .codicon {
+  font-size: 14px;
+}
+
+/* === Inline code === */
+
+code {
+  font-family: var(--font-mono);
+  background: var(--bg-input);
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  color: var(--fg-secondary);
+  font-size: 0.88em;
+  border: 1px solid var(--border-subtle);
+}
+
+/* === Scrollbar mínima === */
+
+/* === Scrollbars UNIVERSAIS UNDRCOD ===
+ * Override TODOS os scrollbars do app com a mesma identidade visual.
+ * !important + universal selector vence qualquer override per-component.
+ * Firefox via scrollbar-color, Chromium via ::-webkit-*.
+ *
+ * Variants:
+ *   - default: 10px (vertical + horizontal)
+ *   - .scroll-inset (popovers, inputs): 6px slim
+ *   - .scroll-overlay (terminal, monaco): só visível no hover
+ */
+:root {
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+*::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+}
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong) !important;
+  border-radius: 8px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+  min-height: 24px !important;
+  min-width: 24px !important;
+  transition: background-color 120ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--fg-muted) !important;
+}
+*::-webkit-scrollbar-thumb:active {
+  background-color: var(--accent) !important;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+/* Buttons (arrows) — hidden pra ficar minimalista */
+*::-webkit-scrollbar-button {
+  display: none !important;
+}
+/* Inset variant — pra inputs/textareas/popovers com scrollbar interno */
+.scroll-inset::-webkit-scrollbar { width: 6px !important; height: 6px !important; }
+.scroll-inset::-webkit-scrollbar-thumb { border-width: 1px !important; }
+
+/* === Accessibility === */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ───────── DiffViewer overlay ───────── */
+.diff-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(2px);
+}
+.diff-viewer-modal {
+  width: min(1400px, 96vw);
+  height: min(820px, 90vh);
+  background: var(--surface-1, #1a1a1a);
+  border: 1px solid var(--border-color, #2a2a2a);
+  border-radius: 8px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.diff-viewer-header {
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border-color, #2a2a2a);
+  background: var(--surface-2, #1d1d1d);
+}
+.diff-viewer-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-primary, #e0e0e0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.diff-viewer-title strong {
+  font-weight: 500;
+}
+.diff-viewer-subtitle {
+  color: var(--text-muted, #888);
+  font-size: 11px;
+  margin-left: 4px;
+}
+.diff-viewer-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.diff-viewer-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #888);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+.diff-viewer-close:hover {
+  background: var(--surface-3, #252525);
+  color: var(--text-primary, #e0e0e0);
+}
+.diff-viewer-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted, #888);
+}
+.diff-viewer-empty .codicon {
+  font-size: 28px;
+  color: var(--accent-success, #4caf50);
+}
+
+/* Overlay global durante drag de valores (DraggableLabel, gradient stops,
+   etc). Renderiza ::after fixed cobrindo TUDO — incluindo <webview> que
+   normalmente captura pointer events e trava o drag. */
+body.is-dragging-value::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  cursor: ew-resize;
+  pointer-events: auto;
+  background: transparent;
+}
+
+/* === Focus reset global (substitui yellow outline nativo) ===
+ *
+ * Problema: Chromium aplica `outline: auto` (anel amarelo dourado) em
+ * qualquer elemento focado — botões depois de Esc num modal/menu, dropdowns
+ * tabulados, etc. Visualmente quebra a marca.
+ *
+ * Estratégia:
+ *   1. `:focus`          → outline:none (mouse click NÃO mostra ring; Chrome
+ *                          já discrimina mas algumas combinações de Tab/Esc
+ *                          re-aplicam o amarelo em `:focus` puro)
+ *   2. `:focus-visible`  → outline 2px on-brand (--border-focus = --accent),
+ *                          aparece SÓ em navegação por teclado (Tab/seta/Esc)
+ *   3. Text inputs       → mantêm anel via box-shadow inset (fallback discreto
+ *                          pros que não definem :focus próprio). Componentes
+ *                          com `:focus { border-color: var(--accent) }` (e.g.
+ *                          .preview-url-input, .preview-design-input) vencem
+ *                          via especificidade — esta regra só pega o resto.
+ *
+ * Componentes que já têm `:focus-visible { outline: ... }` próprio
+ * (Onboarding, ConfirmDialog, PlanPanel, ErrorBoundary, SettingsModal, ...)
+ * mantêm seu styling — o universal `*:focus-visible` é o fallback global.
+ */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--border-focus, var(--accent));
+  outline-offset: 1px;
+  border-radius: inherit;
+}
+
+/* Inputs de texto: fallback discreto via box-shadow inset (não outline) pros
+ * que não declaram :focus próprio. Componentes com border-color próprio
+ * vencem via especificidade. */
+input[type='text']:focus-visible,
+input[type='search']:focus-visible,
+input[type='email']:focus-visible,
+input[type='url']:focus-visible,
+input[type='password']:focus-visible,
+input[type='number']:focus-visible,
+input:not([type]):focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--border-focus, var(--accent));
+}

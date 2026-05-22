@@ -1,0 +1,2149 @@
+/*
+ * ChatView — design system v2 (Linear/Raycast vibe)
+ *
+ * Density alta, hierarchy clara, accent só onde precisa.
+ * Empty state minimal (não hero teatral).
+ * Sans-serif body, mono pra meta. Sem Playfair body.
+ */
+
+.chatview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-panel);          /* match .filetree do pane-left — mesmo tom escuro */
+  min-height: 0;
+  /* min-width:0 + overflow:hidden CRÍTICOS pra flex shrink. Sem isso, quando
+   * o pane do chat fica estreito (split com editor aberto, sem fullscreen),
+   * o composer + messages estouravam horizontalmente em vez de encolher. */
+  min-width: 0;
+  overflow: hidden;
+  position: relative; /* anchor pro FAB chatview-scroll-to-bottom */
+}
+
+/*
+ * Transcript font size variants — controlado por data-transcript-font no .chatview root.
+ * sm/md/lg correspondem aos 3 botões Aa do popover Visualização de transcrição.
+ * Aplica em messages + code blocks via CSS vars locais.
+ */
+.chatview[data-transcript-font="sm"] {
+  --transcript-text-size: 12px;
+  --transcript-code-size: 12px;
+  --transcript-line-height: 1.45;
+}
+.chatview[data-transcript-font="md"] {
+  --transcript-text-size: 14px;
+  --transcript-code-size: 13px;
+  --transcript-line-height: 1.55;
+}
+.chatview[data-transcript-font="lg"] {
+  --transcript-text-size: 17px;
+  --transcript-code-size: 15px;
+  --transcript-line-height: 1.65;
+}
+
+.chatview-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 0;
+  max-width: 880px;
+  width: 100%;
+  margin: 0 auto;
+  font-size: var(--transcript-text-size, 14px);
+  line-height: var(--transcript-line-height, 1.55);
+}
+
+/* FAB "ir pro fim da conversa" — aparece quando user scrolla pra cima.
+ * Position absolute em relação a .chatview, fica logo ACIMA do composer.
+ * Animação fade-in + slide-up sutil. Click leva pro fim com smooth scroll. */
+.chatview-scroll-to-bottom {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--composer-height, 120px) + 24px);
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--fg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition:
+    background var(--duration-fast, 120ms) var(--ease-out-expo, ease-out),
+    color var(--duration-fast, 120ms) var(--ease-out-expo, ease-out),
+    border-color var(--duration-fast, 120ms) var(--ease-out-expo, ease-out),
+    transform var(--duration-fast, 120ms) var(--ease-out-expo, ease-out);
+  animation: chatviewFabIn 200ms var(--ease-out-expo, ease-out);
+}
+.chatview-scroll-to-bottom:hover {
+  background: color-mix(in oklab, var(--bg-elevated) 70%, var(--accent));
+  color: var(--fg-primary);
+  border-color: color-mix(in oklab, var(--border-subtle) 50%, var(--accent));
+  transform: translateX(-50%) translateY(-2px);
+}
+.chatview-scroll-to-bottom:active {
+  transform: translateX(-50%) translateY(0);
+}
+.chatview-scroll-to-bottom i {
+  font-size: 16px;
+}
+@keyframes chatviewFabIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* === History loading indicator — mostra no topo durante adopt de sessão === */
+
+.chatview-history-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  margin: 0 auto;
+  font-size: var(--text-sm, 13px);
+  color: var(--fg-muted);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  animation: emptyFadeIn 240ms var(--ease-out-expo);
+}
+
+.chatview-history-loading-icon {
+  font-size: 14px;
+  color: var(--accent, var(--fg-secondary));
+}
+
+.chatview-history-loading-text {
+  font-family: var(--font-body);
+}
+
+/* === Banner lazy-load — "Carregar mensagens anteriores" === */
+
+.chatview-load-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  margin: 0 auto var(--space-2);
+  font-size: var(--text-sm, 13px);
+  font-family: var(--font-body);
+  color: var(--fg-muted);
+  background: var(--bg-secondary, transparent);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-md, 6px);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.chatview-load-more:hover:not(:disabled) {
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.04));
+  color: var(--fg-primary);
+  border-color: var(--border-strong, rgba(255, 255, 255, 0.14));
+}
+
+.chatview-load-more:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.chatview-load-more .codicon {
+  font-size: 13px;
+}
+
+/* === Empty state — welcome + quickstart cards === */
+
+.chatview-empty {
+  margin: auto;
+  text-align: center;
+  color: var(--fg-muted);
+  padding: var(--space-5);
+  max-width: 560px;
+  width: 100%;
+  animation: emptyFadeIn 240ms var(--ease-out-expo);
+}
+
+@keyframes emptyFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chatview-empty-logo {
+  line-height: 1;
+  color: var(--accent);
+  margin-bottom: var(--space-4);
+  display: flex;
+  justify-content: center;
+}
+
+.chatview-empty-title {
+  font-family: var(--font-body);
+  font-size: var(--text-2xl);              /* maior, mais presente */
+  font-weight: 600;
+  color: var(--fg-primary);
+  margin-bottom: var(--space-1);
+  letter-spacing: -0.02em;
+}
+
+.chatview-empty-tagline {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--fg-muted);
+  font-style: italic;
+  margin-bottom: var(--space-5);
+  letter-spacing: 0.01em;
+}
+
+.chatview-empty-quickstart {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+/*
+ * Splash cards do ChatView empty state.
+ * Alinhado ao gabarito WelcomeView (radius 12, color-mix hover, lift, icon em
+ * square accent preenchido). Design system audit 2026-05-17.
+ */
+.quickstart-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  color: var(--fg-primary);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-body);
+  min-height: 64px;
+  position: relative;
+  transition: transform 160ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)),
+              background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo),
+              box-shadow var(--duration-fast) var(--ease-out-expo);
+}
+
+.quickstart-card:hover:not(:disabled),
+.quickstart-card:focus-visible:not(:disabled) {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+  background: color-mix(in srgb, var(--bg-panel) 93%, var(--accent) 7%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28),
+              0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.quickstart-card:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Icon tile — wrapper square com bg accent-mix 10%, igual welcome-card-icon. */
+.quickstart-card-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  flex-shrink: 0;
+  line-height: 0;
+  font-size: 0;
+  color: var(--accent);
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+
+.quickstart-card-icon .codicon {
+  font-size: 18px !important;
+  line-height: 1;
+}
+
+.quickstart-card:hover .quickstart-card-icon {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/*
+ * Container query: aplicada NO .chatview-empty-quickstart (grid dos cards),
+ * NÃO no .chatview inteiro. Motivo crítico: `container-type` cria um
+ * containing block pra `position: fixed` descendentes — se aplicasse no
+ * .chatview, todos os popovers da composer (mode/plus/model/usage) seriam
+ * posicionados relativos ao chatview em vez do viewport, ficando off-screen.
+ *
+ * Aplicar no container DOS CARDS isola o effect — popovers da composer
+ * continuam corretos (position: fixed relativo ao viewport).
+ */
+.chatview-empty-quickstart {
+  container-type: inline-size;
+}
+
+@container (max-width: 360px) {
+  .quickstart-card-icon {
+    display: none !important;
+  }
+}
+
+.quickstart-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.quickstart-card-body strong {
+  font-weight: 500;
+  font-size: var(--text-base);
+  color: var(--fg-primary);
+}
+
+.quickstart-card-body span {
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  font-weight: 400;
+}
+
+.chatview-empty-hint {
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+  line-height: 1.6;
+}
+
+.chatview-empty-hint kbd {
+  background: var(--bg-elevated);
+  color: var(--fg-secondary);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border: 1px solid var(--border-subtle);
+}
+
+/* === Messages === */
+
+.msg {
+  font-size: var(--text-base);
+  line-height: 1.55;
+  user-select: text;
+}
+
+/* ============================================================================
+ * ToolGroup — summary card de múltiplas tool calls consecutivas
+ *
+ * Claude Code pattern: 3+ tool calls consecutivas viram UM card de summary
+ * ("Editou 3 arquivos, leu 2 arquivos, rodou 1 comando"). Click expande
+ * mostrando ToolCards individuais.
+ * ============================================================================ */
+.tool-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tool-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: color-mix(in oklab, var(--bg-elevated) 30%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border-subtle) 50%, transparent);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--fg-secondary);
+  font: inherit;
+  transition: background var(--duration-fast, 140ms) var(--ease-out-expo, ease-out),
+              border-color var(--duration-fast, 140ms) var(--ease-out-expo, ease-out);
+}
+.tool-group-header:hover {
+  background: color-mix(in oklab, var(--bg-elevated) 50%, transparent);
+  border-color: var(--border-subtle);
+}
+.tool-group-header:focus-visible {
+  outline: none;
+  border-color: color-mix(in oklab, var(--accent) 40%, var(--border-subtle));
+}
+.tool-group.is-expanded .tool-group-header {
+  background: color-mix(in oklab, var(--bg-elevated) 50%, transparent);
+  border-color: var(--border-subtle);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.tool-group-summary {
+  flex: 1 1 auto;
+  font-size: 13px;
+  color: var(--fg-secondary);
+  letter-spacing: 0.005em;
+}
+.tool-group-chev {
+  flex: 0 0 auto;
+  font-size: 13px !important;
+  color: var(--fg-muted);
+}
+.tool-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 12px;
+  border-left: 1px solid color-mix(in oklab, var(--border-subtle) 50%, transparent);
+  margin-left: 8px;
+}
+
+/* Virtual row wrapper — gap entre mensagens (virtualizer position:absolute
+ * remove o gap natural do flex/grid). padding-bottom entra no measureElement,
+ * então o virtualizer calcula altura+gap automaticamente.
+ *
+ * 20px respira melhor entre mensagens. Conversas ficam menos densas, mais
+ * legível. Tools consecutivos têm gap menor via :has — agrupam visualmente. */
+.chatview-virtual-row {
+  padding-bottom: 20px;
+  /* PERF: content-visibility:auto faz o browser SKIP rendering completo
+   * (layout + paint + compositor) pra rows fora da viewport. Animações
+   * infinitas (streamPulse, toolRunningPulse) param de queimar CPU quando
+   * scrollam pra fora. contain-intrinsic-size dá hint pra evitar layout
+   * shifts quando entra de volta na viewport. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 200px;
+}
+
+/* ============================================================================
+ * MESSAGES — polish v3 (impeccable pass)
+ *
+ * Design strategy: RESTRAINED. Tinted neutrals + accent <10%. App é dev tool
+ * em dark theme — conversa é o conteúdo, UI é fundo. Bubbles são affordances
+ * pra speaker direction, NÃO containers decorativos.
+ *
+ * Color: dark canvas + 2 tons elevated. Accent só pra user bubble + links +
+ * inline code emphasis. Sem shadows em dark (não funcionam visualmente).
+ * Sem gradientes. Sem glassmorphism. Sem side-stripes.
+ *
+ * Typography: ratio 1.5 entre body e h1 (above the 1.25 minimum). Hierarchy
+ * via weight + size + color, não decoração.
+ *
+ * Spacing: baseline 4px. Bubbles 12/16. Margins entre blocos 0.875em (relativos
+ * a font-size). Rhythm consistente.
+ * ============================================================================ */
+
+/* USER — bubble accent suave, right-aligned. Mensagens curtas, max ~50ch */
+.msg-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.msg-user .msg-bubble {
+  background: var(--accent-soft);
+  color: var(--fg-primary);
+  padding: 8px 14px;
+  border: 0;
+  /* Asymmetric radius pra speaker direction. Rabicho sutil (radius-md ≈ 6px)
+   * inferior-direito, opposite do agent. */
+  border-radius: 16px 16px 4px 16px;
+  max-width: min(560px, 75%);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  font-size: var(--transcript-text-size, 14px);
+  line-height: var(--transcript-line-height, 1.5);
+}
+
+/* ASSISTANT — texto editorial. SEM bubble (full-bleed left-aligned). */
+.msg-assistant {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.msg-assistant .msg-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
+.msg-logo {
+  color: var(--accent);
+  font-size: 11px !important;
+}
+.msg-streaming {
+  color: var(--accent);
+  animation: streamPulse 1.4s ease-in-out infinite;
+}
+@keyframes streamPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+.msg-assistant .msg-bubble {
+  /* DECISÃO: agent SEM bubble. Texto editorial direto no canvas, como
+   * Claude.ai e ChatGPT moderno fazem.
+   *
+   * Por quê: bubble do agent (com border ou background) compete com bubble
+   * do user. User precisa de affordance (mensagem dele DESTACA o que disse).
+   * Agent é o conteúdo principal — texto deve fluir natural, sem caixa.
+   *
+   * Cap em 65ch (poliosh reference) pra legibilidade. Sem padding lateral
+   * porque o `.chatview-messages` parent já tem `padding: space-4 space-5`. */
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--fg-primary);
+  padding: 0;
+  max-width: 65ch;
+  word-wrap: break-word;
+  white-space: normal;
+  font-size: var(--transcript-text-size, 14px);
+  line-height: var(--transcript-line-height, 1.65);
+}
+/* Markdown interno — spacing rítmico entre blocos. 1em casa exatamente o
+ * gap visível do Claude.ai (verifiquei via screenshot side-by-side). 0.7 antes
+ * tava comprimido demais — "compilou. 3 fixes aplicados:" colava no "1. lista".
+ *
+ * Não usar 0.875em porque 0.875 ainda era apertado em volume de parágrafos
+ * curtos, que é exatamente o uso típico de texto editorial. */
+.msg-assistant .msg-bubble > * + * {
+  margin-top: 1em;
+}
+/* Lista depois de parágrafo: 0.75em (continuidade conceitual sem ser colado).
+ * Antes 0.5em criava aquela sensação de "lista colando no header". */
+.msg-assistant .msg-bubble p + ul,
+.msg-assistant .msg-bubble p + ol {
+  margin-top: 0.75em;
+}
+/* Code block tem peso visual maior (bg elevated + padding generoso). Precisa
+ * mais respiro antes E depois. 1.5em casa o gap percebido do Claude.ai pra
+ * blocos de código.
+ *
+ * IMPORTANTE: o `renderMarkdown` extrai code blocks fenced em <CodeBlock />
+ * (div.msg-code-block envolvendo o <pre>). Selector `> pre + *` NÃO pega
+ * porque o filho direto do bubble é div.msg-code-block, não pre. Os selectors
+ * abaixo capturam ambos casos (markdown ```fenced``` E pre direto via marked). */
+.msg-assistant .msg-bubble > pre + *,
+.msg-assistant .msg-bubble > * + pre,
+.msg-assistant .msg-bubble > .msg-code-block + *,
+.msg-assistant .msg-bubble > * + .msg-code-block,
+.msg-assistant .msg-bubble > .msg-md + .msg-md {
+  margin-top: 1.5em;
+}
+
+/* IMPORTANTE: marked agrupa TODO o markdown num único `<span class="msg-md">`.
+ * Então `<p>resumo de cada variante:</p><table>...</table>` ficam ambos
+ * dentro do mesmo span. O `> * + *` do bubble (acima) só pega siblings do
+ * span — não pega o conteúdo INTERNO. Preciso de regra específica targeting
+ * children do .msg-md.
+ *
+ * BUG CRITICAL: span é display:inline por default. Margin de block children
+ * (table, h*, p) pode ficar bagunçada em contexto inline. Forçando display:block
+ * no .msg-md garante que filhos block-level tenham seu próprio contexto BFC e
+ * respeitem margin-top com adjacent sibling selectors.
+ *
+ * Sem isso, parágrafos+tabelas+listas geradas pelo marked ficam coladas. */
+.msg-assistant .msg-bubble .msg-md {
+  display: block;
+}
+.msg-assistant .msg-bubble .msg-md > * + * {
+  margin-top: 1em;
+}
+/* Streaming raw — sem marked.parse pra evitar O(N²) reparse. Preserva
+ * whitespace cru (line breaks, espaços). Quando streaming termina, troca
+ * pra .msg-md normal com markdown formatado completo. */
+.msg-assistant .msg-bubble .msg-md-streaming {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+/* Tabelas dentro de .msg-md precisam de mais respiro (peso visual maior).
+ * 1.5em entre texto e tabela é o gap percebido como "respiro adequado". */
+.msg-assistant .msg-bubble .msg-md > * + table,
+.msg-assistant .msg-bubble .msg-md > table + * {
+  margin-top: 1.5em;
+}
+/* Defensive: também aplica margin DIRETO na <table> dentro do .msg-md.
+ * Cobre case onde tabela seja PRIMEIRO elemento (sem sibling anterior) ou
+ * quando algum override sobrescreve o adjacent-sibling. */
+.msg-assistant .msg-bubble .msg-md > table {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+/* Headings dentro de .msg-md também precisam de respiro extra antes */
+.msg-assistant .msg-bubble .msg-md > * + h1,
+.msg-assistant .msg-bubble .msg-md > * + h2,
+.msg-assistant .msg-bubble .msg-md > * + h3,
+.msg-assistant .msg-bubble .msg-md > * + h4 {
+  margin-top: 1.6em;
+}
+/* Listas dentro de .msg-md: gap normal antes, mas menor entre header e lista */
+.msg-assistant .msg-bubble .msg-md > p + ul,
+.msg-assistant .msg-bubble .msg-md > p + ol {
+  margin-top: 0.75em;
+}
+.msg-assistant .msg-bubble p {
+  margin: 0;
+}
+.msg-assistant .msg-bubble ul,
+.msg-assistant .msg-bubble ol {
+  margin: 0;
+  padding-left: 1.5em;
+}
+.msg-assistant .msg-bubble li {
+  padding-left: 0.15em;
+}
+.msg-assistant .msg-bubble li + li {
+  margin-top: 0.4em;
+}
+/* Items NUMERADOS (top-level ol) precisam de mais respiro entre si — cada um
+ * vira uma "seção" com header + sublista. Sem isso o número 2 cola no último
+ * bullet do item 1, ficando ambíguo qual bullet pertence a quem. */
+.msg-assistant .msg-bubble > ol > li + li {
+  margin-top: 1em;
+}
+/* Sublista dentro de item numerado: NÃO sobe gap (continua o pensamento do
+ * número). Override do `> * + *` 1em geral. 0.45em antes era apertado demais
+ * — sublista colava no header. 0.55em dá respiro mínimo sem quebrar continuidade. */
+.msg-assistant .msg-bubble ol > li > ul,
+.msg-assistant .msg-bubble ol > li > ol {
+  margin-top: 0.55em;
+}
+/* Sublista dentro de bullet (ul > li > ul/ol) — mesmo princípio de continuidade. */
+.msg-assistant .msg-bubble ul > li > ul,
+.msg-assistant .msg-bubble ul > li > ol {
+  margin-top: 0.4em;
+}
+/* Parágrafo dentro de li (markdown gera <p> dentro de <li> em listas "loose").
+ * Sem reset, o `p { margin: 0 }` global já cuida, mas p+p dentro do li precisa
+ * gap próprio menor que entre blocos top-level. */
+.msg-assistant .msg-bubble li > p + p {
+  margin-top: 0.5em;
+}
+/* Parágrafo final depois de lista: respiro normal de 1em */
+.msg-assistant .msg-bubble ul + p,
+.msg-assistant .msg-bubble ol + p {
+  margin-top: 1em;
+}
+/* Bullet customizado: discreto. Listas INDENTADAS (padding-left no ul) pra
+ * parágrafos siblings não parecerem desalinhados à esquerda dos bullets.
+ *
+ * Antes: ul padding-left 0 + li padding-left 1.4em (bullet absoluto a 0.5em).
+ * Resultado: bullet ficava na margem esquerda do bubble. Parágrafo seguinte
+ * começava NA MESMA coluna do bullet — visualmente quebrado ("texto continua
+ * à esquerda do bullet").
+ *
+ * Agora: ul padding-left 1em (indenta lista inteira). Bullet em 0 do li
+ * (margem esquerda da lista). Parágrafo seguinte fica em 0 do bubble, MAS o
+ * bullet/conteúdo da lista fica RECUADO 1em — flow visual correto:
+ *   parágrafo aqui
+ *     • item indentado
+ *     • item indentado
+ *   próximo parágrafo aqui */
+.msg-assistant .msg-bubble ul {
+  list-style: none;
+  padding-left: 1em;
+}
+.msg-assistant .msg-bubble ul > li {
+  position: relative;
+  padding-left: 1em;
+}
+/* Sublistas aninhadas dentro de ol — menos indent (já estão dentro de um
+ * item numerado, não precisam empilhar indent. Bullets a 0 do parent ol). */
+.msg-assistant .msg-bubble ol > li > ul {
+  padding-left: 0;
+}
+.msg-assistant .msg-bubble ol > li > ul > li {
+  padding-left: 1em;
+}
+.msg-assistant .msg-bubble ul > li::before {
+  /* Bullet neutro (Claude.ai pattern). Accent só pra ações/links, não pra
+   * marcadores estruturais. 3px no lugar de 4px também — mais discreto. */
+  content: '';
+  position: absolute;
+  left: 0.5em;
+  top: 0.65em;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--fg-muted);
+}
+.msg-assistant .msg-bubble ol {
+  list-style: decimal;
+  list-style-position: outside;
+}
+.msg-assistant .msg-bubble ol > li::marker {
+  color: var(--fg-muted);
+  font-weight: 600;
+}
+.msg-assistant .msg-bubble code:not(pre code) {
+  /* Code inline — destacado contra o bg do bubble pra ficar legível em qualquer
+   * fundo. Usa accent suave + border leve. Antes era bg-elevated (cinza meio
+   * invisível em dark mode). Agora tem contraste suficiente. */
+  background: color-mix(in oklab, var(--accent) 12%, var(--bg-elevated));
+  border: 1px solid color-mix(in oklab, var(--accent) 18%, transparent);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+  font-size: 0.87em;
+  color: var(--fg-primary);
+  font-weight: 500;
+}
+.msg-assistant .msg-bubble pre {
+  margin: 0;
+  /* Code block — elevated tint sem border (border + bg duplo = ruído).
+   * radius-lg (10px) coerente com bubbles. Padding generoso pra respirar. */
+  background: var(--bg-elevated);
+  border: 0;
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: var(--transcript-code-size, 13px);
+  line-height: 1.55;
+}
+.msg-assistant .msg-bubble pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-family: var(--font-mono);
+  color: var(--fg-primary);
+}
+.msg-assistant .msg-bubble strong {
+  font-weight: 600;
+  color: var(--fg-primary);
+}
+.msg-assistant .msg-bubble a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in oklab, var(--accent) 40%, transparent);
+}
+.msg-assistant .msg-bubble a:hover {
+  border-bottom-color: var(--accent);
+}
+
+/* Italic — eleva levemente, fg-secondary pra distinguir de texto normal */
+.msg-assistant .msg-bubble em {
+  font-style: italic;
+  color: var(--fg-secondary);
+}
+
+/* HR — separador discreto. 1.5em era ok, mas hr é um break SEMÂNTICO (mudança
+ * de tópico), merece visual break maior que blocos comuns. 2em casa o claude.ai. */
+.msg-assistant .msg-bubble hr {
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  margin: 2em 0;
+}
+/* hr depois de outro bloco: override do `> * + *` 1em pra preservar 2em total */
+.msg-assistant .msg-bubble > * + hr {
+  margin-top: 2em;
+}
+
+/* ============================================================================
+ * TABLES — copia visual do Claude.ai / GitHub
+ *
+ * Bubble com tabela quebra do constraint de 65ch (precisa de mais width
+ * pra cells não wrap). Cells em nowrap por default. Horizontal scroll
+ * quando ainda passa.
+ * ============================================================================ */
+
+/* Bubble com tabela ganha mais largura (CSS :has support nos browsers modernos).
+ * Sem isso, tabela fica espremida em 65ch e cada cell wrap em múltiplas linhas. */
+.msg-assistant .msg-bubble:has(table) {
+  /* Bubble com tabela usa 100% da largura disponível do pane (não limita a
+   * 95ch como prose normal). Tabela é elemento estrutural, beneficia de
+   * espaço horizontal pra colunas respirarem. */
+  max-width: 100%;
+  width: 100%;
+}
+
+.msg-assistant .msg-bubble table {
+  /* display: table (não block) — block estava sabotando o algoritmo natural
+   * de distribuição de colunas. Com block, colunas curtas não esticavam pra
+   * ocupar o espaço disponível, deixando a tabela "comida na direita".
+   * Com table (default), browser distribui width entre cells naturalmente. */
+  display: table;
+  /* width: 100% do container = largura da tela (do pane). Nunca estoura.
+   * max-width: 100% é redundância defensiva pra caso width interno seja maior. */
+  width: 100%;
+  max-width: 100%;
+  table-layout: auto;
+  /* `separate` (não `collapse`) evita double-border quando radius + border no wrapper.
+   * Collapse + border-radius é o classic bug: bordas internas vazam pelo canto. */
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  font-size: 0.92em;
+  line-height: 1.55;
+  margin: 1.5em 0 0.5em;
+}
+.msg-assistant .msg-bubble table thead {
+  background: var(--bg-elevated);
+}
+/* Arredonda canto interno do header pra casar com radius do wrapper.
+ * `border-collapse:separate` exige radius explícito nas cells dos cantos. */
+.msg-assistant .msg-bubble table thead tr:first-child th:first-child {
+  border-top-left-radius: calc(var(--radius-lg) - 1px);
+}
+.msg-assistant .msg-bubble table thead tr:first-child th:last-child {
+  border-top-right-radius: calc(var(--radius-lg) - 1px);
+}
+.msg-assistant .msg-bubble table th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.92em;
+  letter-spacing: 0.01em;
+  color: var(--fg-secondary);
+  padding: 14px 16px;
+  /* Header borders: divisória vertical + horizontal mais FORTES que body cells
+   * porque thead tem bg-elevated (mesmo tom da border-subtle, ficam invisíveis).
+   * Usa border-strong pra contrastar contra o background do header. */
+  border-bottom: 1px solid var(--border-strong, var(--border-subtle));
+  border-right: 1px solid var(--border-strong, var(--border-subtle));
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.msg-assistant .msg-bubble table td {
+  padding: 11px 16px;
+  /* Border-right + border-bottom em CADA cell = linhas separadoras estilo
+   * Claude Code / planilha clássica. User pediu de volta após remover antes.
+   * Última col remove right, última row remove bottom (regras abaixo). */
+  border: 0;
+  border-right: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--fg-primary);
+  vertical-align: baseline;
+  /* Cells wrappam naturalmente — sem isso, conteúdo longo (URLs, código,
+   * texto sem espaços) estourava a tabela horizontalmente. `overflow-wrap:
+   * anywhere` quebra mesmo em palavras sem espaços (URLs, IDs longos). */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+/* Inline code dentro de cell quebra junto com o texto pra não estourar
+ * tabela. word-break + overflow-wrap herdados do td. */
+/* Última coluna: sem border-right (já tem border externo do wrapper) */
+.msg-assistant .msg-bubble table th:last-child,
+.msg-assistant .msg-bubble table td:last-child {
+  border-right: 0;
+}
+/* Última row: sem border-bottom (já tem border externo do wrapper) */
+.msg-assistant .msg-bubble table tbody tr:last-child td {
+  border-bottom: 0;
+}
+/* Última coluna wrappa naturalmente (geralmente a descrição longa) */
+.msg-assistant .msg-bubble table td:last-child,
+.msg-assistant .msg-bubble table th:last-child {
+  white-space: normal;
+  min-width: 0;
+}
+/* Padding lateral leve nas edges — primeira/última col com 18px out, 16px in.
+ * Detalhe sutil que faz a tabela "respirar" nas extremidades (Linear pattern). */
+.msg-assistant .msg-bubble table th:first-child,
+.msg-assistant .msg-bubble table td:first-child {
+  padding-left: 18px;
+}
+.msg-assistant .msg-bubble table th:last-child,
+.msg-assistant .msg-bubble table td:last-child {
+  padding-right: 18px;
+}
+/* Coluna esquerda em weight maior (Claude Code pattern: primeira col = label) */
+.msg-assistant .msg-bubble table td:first-child {
+  font-weight: 500;
+  color: var(--fg-primary);
+}
+/* Linha alternada — zebra striping é a ÚNICA separação visual entre rows.
+ * 60% mix (era 30%, quase invisível segundo screenshots side-by-side). Issue #2. */
+.msg-assistant .msg-bubble table tbody tr:nth-child(even) {
+  background: color-mix(in oklab, var(--bg-elevated) 60%, transparent);
+}
+/* Hover sutil em rows do body — melhora scaneabilidade row-a-row */
+.msg-assistant .msg-bubble table tbody tr:hover {
+  background: color-mix(in oklab, var(--bg-elevated) 90%, transparent);
+}
+/* Última row: cantos internos arredondados pra casar com radius do wrapper */
+.msg-assistant .msg-bubble table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: calc(var(--radius-lg) - 1px);
+}
+.msg-assistant .msg-bubble table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: calc(var(--radius-lg) - 1px);
+}
+
+/* kbd — atalhos de teclado */
+.msg-assistant .msg-bubble kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  color: var(--fg-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+
+/* Task list checkboxes (GFM `- [ ]` / `- [x]`) */
+.msg-assistant .msg-bubble input[type="checkbox"] {
+  margin-right: 0.4em;
+  accent-color: var(--accent);
+}
+
+/* Mark / highlight */
+.msg-assistant .msg-bubble mark {
+  background: color-mix(in oklab, var(--accent) 20%, transparent);
+  color: var(--fg-primary);
+  padding: 1px 3px;
+  border-radius: 2px;
+}
+/* Headings — escala 1.5/1.3/1.15/1.0 (ratio >= 1.3 entre níveis, atinge
+ * o minimum 1.25 do polish reference). Margin-top assimétrico: top > bottom
+ * pra criar hierarquia visual (heading "pertence" ao bloco que vem depois).
+ *
+ * Antes: 1.2em uniforme + sem margin-bottom. Resultado: parágrafo após h2
+ * colava no heading; h1/h2 não tinham respiro suficiente após blocos densos.
+ *
+ * Agora: h1 1.8em top (break maior), h2 1.6em, h3 1.3em, h4 1em.
+ * Margin-bottom 0.4em pra que o primeiro parágrafo depois do heading respire. */
+.msg-assistant .msg-bubble h1,
+.msg-assistant .msg-bubble h2,
+.msg-assistant .msg-bubble h3,
+.msg-assistant .msg-bubble h4 {
+  font-weight: 600;
+  color: var(--fg-primary);
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+.msg-assistant .msg-bubble h1 { font-size: 1.5em; }
+.msg-assistant .msg-bubble h2 { font-size: 1.3em; }
+.msg-assistant .msg-bubble h3 { font-size: 1.15em; }
+.msg-assistant .msg-bubble h4 {
+  font-size: 0.78em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-secondary);
+  font-weight: 600;
+}
+/* Override `> * + *` 1em uniforme: headings merecem mais break antes. */
+.msg-assistant .msg-bubble > * + h1 { margin-top: 1.8em; }
+.msg-assistant .msg-bubble > * + h2 { margin-top: 1.6em; }
+.msg-assistant .msg-bubble > * + h3 { margin-top: 1.3em; }
+.msg-assistant .msg-bubble > * + h4 { margin-top: 1.2em; }
+/* Conteúdo logo após heading: respiro reduzido (heading "atrai" o próximo bloco) */
+.msg-assistant .msg-bubble h1 + *,
+.msg-assistant .msg-bubble h2 + *,
+.msg-assistant .msg-bubble h3 + *,
+.msg-assistant .msg-bubble h4 + * {
+  margin-top: 0.5em;
+}
+/* Primeiro elemento não tem margin-top */
+.msg-assistant .msg-bubble > :first-child {
+  margin-top: 0;
+}
+.msg-assistant .msg-bubble blockquote {
+  margin: 0;
+  /* 0.6em vertical (era 0.4em) — texto dentro do quote precisa respirar
+   * verticalmente, senão fica espremido contra o border-left. */
+  padding: 0.6em 0.9em;
+  border-left: 2px solid color-mix(in oklab, var(--accent) 50%, transparent);
+  color: var(--fg-secondary);
+  background: color-mix(in oklab, var(--bg-base) 30%, transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+/* Parágrafos dentro do quote NÃO usam 1em entre si — herda do `> * + *` parent
+ * só conta filhos diretos do bubble. Aqui adiciono explicit pra p+p interno. */
+.msg-assistant .msg-bubble blockquote > * + * {
+  margin-top: 0.5em;
+}
+
+/* TOOL — accordion seco */
+.msg-tool {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  font-size: var(--text-sm);
+}
+.msg-tool.has-error {
+  border-color: color-mix(in oklab, var(--red) 30%, var(--border-subtle));
+}
+.msg-tool-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  color: var(--fg-secondary);
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+.msg-tool-header:hover {
+  background: var(--bg-elevated);
+}
+.msg-chevron {
+  color: var(--fg-muted);
+  font-size: 9px;
+  width: 10px;
+}
+.msg-tool-icon {
+  font-size: 13px !important;
+  color: var(--accent);
+  opacity: 0.85;
+}
+.msg-tool-name {
+  flex: 1;
+  color: var(--fg-primary);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  letter-spacing: 0.01em;
+}
+.msg-tool-status {
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+}
+.msg-tool-body {
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+}
+.msg-tool-section {
+  margin-top: var(--space-3);
+}
+.msg-tool-section:first-child {
+  margin-top: 0;
+}
+.msg-tool-section-title {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+}
+.msg-code {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  background: var(--bg-input);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--fg-secondary);
+  overflow-x: auto;
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 320px;
+  overflow-y: auto;
+  line-height: 1.5;
+}
+
+/* THINKING — pill colapsável com header + body opcional.
+ * Match Claude.ai: ícone lightbulb + "Pensou {duração}" + chevron, expand suave.
+ * Collapsed por default; transcriptMode "thinking"/"detailed" força expand;
+ * transcriptMode "summary" filtra fora (não chega aqui). */
+.msg-thinking {
+  margin: 6px 0;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+  max-width: fit-content;
+  overflow: hidden;
+  transition:
+    background var(--duration-fast) var(--ease-out-expo),
+    border-color var(--duration-fast) var(--ease-out-expo);
+}
+.msg-thinking[data-collapsed='false'] {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.msg-thinking-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--fg-muted);
+  font-style: italic;
+  letter-spacing: 0.005em;
+  width: 100%;
+  text-align: left;
+  transition:
+    background var(--duration-fast) var(--ease-out-expo),
+    color var(--duration-fast) var(--ease-out-expo);
+}
+.msg-thinking-header:hover {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  color: var(--fg-secondary);
+}
+.msg-thinking-header:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  outline-offset: -1px;
+}
+
+.msg-thinking-icon {
+  font-size: 12px;
+  color: var(--accent);
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+.msg-thinking-label {
+  flex-shrink: 0;
+}
+.msg-thinking-duration {
+  color: var(--accent);
+  font-weight: 500;
+  font-style: normal;
+}
+.msg-thinking-caret {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-left: 4px;
+  flex-shrink: 0;
+  transition: transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.msg-thinking-body {
+  padding: 8px 12px 10px 30px;
+  border-top: 1px dashed color-mix(in srgb, var(--accent) 10%, transparent);
+  animation: thinkingExpand var(--duration-base) var(--ease-out-expo);
+}
+@keyframes thinkingExpand {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.msg-thinking-content {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--fg-secondary);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-style: italic;
+  opacity: 0.92;
+}
+
+/* Streaming inline indicator — cursor `_` piscando (reusa .wordmark-u global).
+ * No contexto do chat (font 13px), o block fica ~7×2.3px — discreto mas visível.
+ * Adiciona um pouco mais de altura pra ficar mais legível inline com texto. */
+.msg-streaming-cursor {
+  margin-left: 2px;
+  vertical-align: baseline;
+}
+.msg-streaming-cursor::after {
+  height: 0.22em;             /* override do .wordmark-u (era 0.18em) — mais visível em texto pequeno */
+  bottom: 0.08em;
+}
+
+/* ERROR — alert minimal */
+.msg-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--red);
+  padding: var(--space-2) var(--space-3);
+  background: color-mix(in oklab, var(--red) 8%, transparent);
+  border: 1px solid color-mix(in oklab, var(--red) 28%, transparent);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+}
+
+/* AUTH EXPIRED — bloco dedicado com call-to-action "Entrar de novo" */
+.msg-auth-expired {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: color-mix(in oklab, var(--red) 6%, transparent);
+  border: 1px solid color-mix(in oklab, var(--red) 32%, transparent);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+}
+.msg-auth-expired-icon {
+  color: var(--red);
+  font-size: 16px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+.msg-auth-expired-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.msg-auth-expired-title {
+  font-weight: 600;
+  color: var(--red);
+}
+.msg-auth-expired-desc {
+  color: var(--fg-muted);
+  line-height: 1.4;
+}
+.msg-auth-expired-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  align-self: flex-start;
+  color: var(--fg);
+  font-weight: 600;
+  text-decoration: none;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid color-mix(in oklab, var(--red) 48%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--red) 10%, transparent);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.msg-auth-expired-action:hover {
+  background: color-mix(in oklab, var(--red) 18%, transparent);
+  border-color: color-mix(in oklab, var(--red) 64%, transparent);
+}
+.msg-auth-expired-action .codicon {
+  font-size: 12px;
+}
+
+/* META — divider tipográfico discreto */
+.msg-meta {
+  text-align: center;
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  padding: var(--space-1) 0;
+  letter-spacing: 0.04em;
+}
+
+/* === Footer === */
+
+.chatview-footer {
+  flex-shrink: 0;
+  padding: 8px 10px 10px;          /* externo reduzido — composer ocupa mais largura/altura */
+  background: transparent;
+  max-width: 880px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;          /* padding entra na largura — sem isso, footer + padding excede o pane */
+  min-width: 0;                    /* permite shrink em flex parent estreito */
+}
+
+.chatview-stats {
+  font-size: 10px;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  margin-bottom: var(--space-2);
+  text-align: right;
+  letter-spacing: 0.02em;
+}
+
+.composer-wrapper {
+  position: relative;
+  min-width: 0;       /* permite shrink em flex parent */
+  width: 100%;
+}
+
+/* === Composer (Claude Code style) ===
+ * Container vertical: textarea em cima, toolbar embaixo.
+ * Visual minimal, dark, bordas arredondadas, focus-within highlight. */
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);          /* #1f1f1f — tom específico pedido pelo user */
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 12px 14px 12px 14px;
+  gap: 16px;
+  transition: border-color var(--duration-fast) var(--ease-out-expo),
+              box-shadow var(--duration-fast) var(--ease-out-expo);
+  /* box-sizing + width 100% garantem que padding interno entra na largura
+   * e o composer ocupa exatamente a largura do .composer-wrapper. Sem isso,
+   * em pane estreito o composer ficava overflowing à direita (border-radius
+   * cortada). min-width:0 permite shrink em flex parent. */
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+.composer:focus-within {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 1px var(--accent-soft);
+}
+
+/*
+ * Drop target — quando há drag ativo (FileTree interno OU OS file) sobre o composer,
+ * mostra overlay com border dashed accent + texto "Solte pra anexar".
+ * position:relative no parent pra ancorar o overlay absoluto.
+ */
+.composer {
+  position: relative;
+}
+.composer.is-drop-target {
+  border-color: var(--accent, #d4a574);
+  border-style: dashed;
+  background: color-mix(in srgb, var(--accent, #d4a574) 8%, var(--bg-elevated));
+}
+.composer-drop-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent, #d4a574) 10%, transparent);
+  color: var(--accent, #d4a574);
+  pointer-events: none;          /* eventos passam pro composer; overlay é só visual */
+  z-index: 5;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.composer-drop-overlay-icon {
+  font-size: 22px;
+}
+.composer-drop-overlay-text {
+  opacity: 0.95;
+}
+
+.composer-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  resize: none;
+  min-height: 40px;
+  max-height: 220px;
+  padding: 0;
+}
+.composer-input::placeholder {
+  color: var(--fg-muted);
+}
+/* Anula TUDO de styling externo do textarea ao focar.
+ *
+ * Há DUAS regras globais (global.css linhas 1492-1515) que aplicam:
+ *   1. `*:focus-visible { outline: 2px solid accent; outline-offset: 1px;
+ *      border-radius: inherit }` — outline herda border-radius do parent
+ *      (.composer 14px), criando aparência de border arredondado em volta
+ *      do textarea, que parece cortar a primeira letra do texto
+ *   2. `textarea:focus-visible { box-shadow: inset 0 0 0 1px accent }` —
+ *      border azul DENTRO do textarea
+ *
+ * Ambos criavam um "ring duplo" visual ao redor do input quando o composer
+ * pai já tem seu próprio `.composer:focus-within` ring envolvendo tudo.
+ * !important garante override mesmo se especificidade global mudar.
+ *
+ * border-radius: 0 explicit pra outline (caso ele apareça via algum override
+ * inesperado) não herdar curvatura grande do composer. */
+.composer-input,
+.composer-input:focus,
+.composer-input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+.composer-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/*
+ * Attachments — chips visuais acima do textarea representando arquivos/pastas
+ * que serão prefixados como @path no envio. Substitui a UX antiga de inserir
+ * `@path` direto no input (frágil — usuário podia editar/deletar acidentalmente).
+ */
+.composer-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
+  border-bottom: 1px dashed var(--border-subtle);
+  max-height: 88px;
+  overflow-y: auto;
+}
+
+.composer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--fg-secondary);
+  padding: 3px 4px 3px 10px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  line-height: 1.2;
+  max-width: 220px;
+  user-select: none;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+  animation: chipFadeIn 160ms var(--ease-out-expo);
+}
+.composer-chip:hover {
+  background: var(--bg-active, var(--bg-elevated));
+  border-color: var(--border-strong);
+  color: var(--fg-primary);
+}
+
+@keyframes chipFadeIn {
+  from { opacity: 0; transform: translateY(2px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.composer-chip-icon {
+  font-size: 11px !important;
+  color: var(--accent);
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+.composer-chip-folder .composer-chip-icon {
+  color: var(--gold-400, var(--accent));
+}
+
+.composer-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.composer-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--fg-muted);
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.composer-chip-remove .codicon {
+  font-size: 11px;
+}
+.composer-chip-remove:hover {
+  background: color-mix(in oklab, var(--red, #de5555) 18%, transparent);
+  color: var(--red, #de5555);
+}
+
+/* ============================================================================
+ * Composer UI-Element Chip (Cursor pattern — `mention-codicon-wrapper.mention-ui-element`)
+ * ----------------------------------------------------------------------------
+ * Renderiza um chip COMPACTO quando user clica Apply na popover "N Edits" do
+ * CSS Inspector. Replica EXATO o markup do Cursor (bundle workbench.desktop.main.js,
+ * função `tIe(icon, text, mentionClass)`):
+ *
+ *   <span class="mention-codicon-wrapper mention-ui-element">
+ *     <i class="codicon codicon-inspect" />        ← ícone azul
+ *     <span>{`<${tagName}>`}</span>                ← texto = tag do elemento
+ *     <i class="codicon codicon-close" data-mention-remove />
+ *   </span>
+ *
+ * UNDRCOD reusa `.composer-chip` (já estilizado pros @file/@folder chips) e
+ * adiciona variant `.composer-chip-ui-element` pra cor azul + ícone codicon-inspect.
+ * Tooltip nativo (title attr) mostra o diff completo. Diff vai NO prompt — não
+ * exposto visualmente (Cursor faz igual: extra=JSON.stringify($d) na metadata).
+ * ============================================================================ */
+.composer-chip-ui-element {
+  /* Herda layout base de .composer-chip (display, padding, border, etc) */
+  border-color: color-mix(in oklab, var(--accent, #6cb6ff) 35%, var(--border-subtle));
+}
+.composer-chip-ui-element .composer-chip-icon {
+  color: var(--accent, #6cb6ff);
+}
+.composer-chip-ui-element .composer-chip-name {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  color: var(--accent, #6cb6ff);
+  font-size: 11.5px;
+}
+
+/* CSS changes inline-mention style — chips flutuam ABSOLUTOS sobre o textarea
+ * no top-left, e o textarea usa text-indent dinâmico (computado em JS via
+ * ResizeObserver) pra empurrar placeholder/cursor pra depois dos chips na
+ * MESMA linha. Efeito final: chips parecem @mention inline com o texto.
+ *
+ * Diferente de `.composer-attachments` regular (file/folder chips) que ocupa
+ * sua própria row ACIMA do textarea com border dashed embaixo. */
+.composer-attachments-css-inline {
+  position: absolute;
+  /* Alinha com o padding interno do composer (12px top / 14px left). Ajustar
+   * se composer padding mudar. */
+  top: 12px;
+  left: 14px;
+  z-index: 1;
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: none;
+  max-height: none;
+  overflow: visible;
+  pointer-events: none; /* deixa clicks no espaço entre chips passarem ao textarea */
+}
+.composer-attachments-css-inline > * {
+  pointer-events: auto; /* mas o próprio chip recebe cliques normalmente */
+}
+
+/* Chip is-expanded — visual cue de que o panel detalhado está aberto abaixo.
+ * Border-bottom matching o panel pra conectar visualmente. */
+.composer-chip-ui-element.is-expanded {
+  background: color-mix(in oklab, var(--accent, #6cb6ff) 12%, var(--bg-elevated, #1b1b1d));
+  border-color: color-mix(in oklab, var(--accent, #6cb6ff) 50%, var(--border-subtle));
+}
+.composer-chip-ui-element {
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+.composer-chip-ui-element:hover {
+  background: color-mix(in oklab, var(--accent, #6cb6ff) 10%, var(--bg-elevated, #1b1b1d));
+}
+/* Detail panel expandido logo abaixo dos chips do composer. */
+.composer-css-changes-detail {
+  margin-top: 6px;
+  margin-bottom: 8px;
+  border: 1px solid color-mix(in oklab, var(--accent, #6cb6ff) 35%, var(--border-subtle));
+  border-radius: 8px;
+  background: var(--bg-elevated, #1b1b1d);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+/* ============================================================================
+ * CssChangesPanel — painel detalhado do chip CSS (popover composer + bubble user)
+ *
+ * Design refinado pós-feedback: labels MENORES e discretas, densidade ALTA,
+ * blocos de código com background sutil sem border (pra não competir com
+ * o border externo do panel). Hierarquia: labels ~9px uppercase faint + code
+ * ~11px mono full-opacity. Path em accent. Inner text com aspas mas SEM
+ * itálico (mais limpo). Changes com layout grid alinhado.
+ * ============================================================================ */
+.css-changes-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 14px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.css-changes-panel.is-compact {
+  padding: 12px;
+  gap: 10px;
+}
+.css-changes-panel-header {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  margin: -2px 0 4px;
+}
+.css-changes-panel-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.css-changes-panel-group + .css-changes-panel-group {
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-subtle);
+}
+.css-changes-panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.css-changes-panel-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: color-mix(in oklab, var(--fg-muted) 80%, transparent);
+  text-transform: uppercase;
+}
+.css-changes-panel-code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--fg-default);
+  background: color-mix(in oklab, var(--bg-default, #0d0d0f) 60%, transparent);
+  padding: 7px 9px;
+  border-radius: 5px;
+  border: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: block;
+}
+.css-changes-panel-path {
+  color: var(--accent, #6cb6ff);
+  font-size: 10.5px;
+  letter-spacing: 0.01em;
+}
+.css-changes-panel-text {
+  font-size: 12px;
+  color: var(--fg-default);
+  padding: 4px 9px;
+  background: color-mix(in oklab, var(--bg-default, #0d0d0f) 40%, transparent);
+  border-radius: 5px;
+  border-left: 2px solid color-mix(in oklab, var(--accent, #6cb6ff) 50%, transparent);
+}
+.css-changes-panel-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11.5px;
+  padding: 3px 0;
+}
+.css-changes-panel-row + .css-changes-panel-row {
+  border-top: 1px solid color-mix(in oklab, var(--border-subtle) 60%, transparent);
+}
+.css-changes-panel-prop {
+  color: var(--fg-default);
+  font-weight: 500;
+  white-space: nowrap;
+  min-width: 90px;
+}
+.css-changes-panel-prop::after {
+  content: ':';
+  color: var(--fg-muted);
+  margin-left: 1px;
+}
+.css-changes-panel-old {
+  color: var(--fg-muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--fg-muted) 50%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 45%;
+  opacity: 0.75;
+}
+.css-changes-panel-arrow {
+  font-size: 10px !important;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+  margin: 0 2px;
+  align-self: center;
+  opacity: 0.6;
+}
+.css-changes-panel-new {
+  color: var(--green, #7cc878);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 55%;
+}
+
+/* ============================================================================
+ * User CSS Changes — chips compactos no bubble do user no histórico.
+ * Múltiplos chips (1 por Apply) ficam lado a lado, wrap se não couber.
+ * Click no chip → expande panel detalhado abaixo (1 panel visível por vez).
+ * ============================================================================ */
+.user-css-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  max-width: 100%;
+}
+.user-css-changes-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+  max-width: 100%;
+}
+.user-css-changes-detail {
+  width: min(100%, 480px);
+  border: 1px solid var(--border-default, #2d2d30);
+  border-radius: 8px;
+  background: var(--bg-elevated, #1b1b1d);
+  overflow-x: auto;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.composer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;            /* permite shrink dos filhos */
+  flex-wrap: nowrap;       /* mantém em 1 linha — items truncam ao invés de quebrar */
+}
+
+.composer-toolbar-left,
+.composer-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;                /* respiro tipo Cursor/Antigravity */
+  min-width: 0;
+}
+
+/* Mode badge (= "Auto" do Claude Code) — outline style, sem fill, compacto. */
+.composer-mode {
+  background: transparent;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  height: 18px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  user-select: none;
+  line-height: 1;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              transform var(--duration-instant) var(--ease-out-expo);
+}
+.composer-mode:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: var(--accent);
+}
+.composer-mode:active {
+  transform: scale(0.95);
+}
+.composer-mode.is-open {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: var(--accent);
+}
+
+/* Mode variants — cor diferente por permission mode */
+/* Variantes coloridas — fill sólido SEM border (border accent fica feio
+ * em cima de fundo colorido). border:0 sobrescreve o default. */
+.composer-mode.mode-default {
+  background: color-mix(in oklab, var(--fg-primary) 14%, var(--bg-elevated));
+  color: var(--fg-primary);
+  border: 0;
+}
+.composer-mode.mode-default:hover,
+.composer-mode.mode-default.is-open {
+  background: color-mix(in oklab, var(--fg-primary) 22%, var(--bg-elevated));
+  border-color: transparent;
+}
+
+.composer-mode.mode-plan {
+  background: var(--blue-400, #6a9fcb);
+  color: var(--charcoal);
+  border: 0;
+}
+.composer-mode.mode-plan:hover,
+.composer-mode.mode-plan.is-open {
+  background: var(--blue-300, #9cbedd);
+  border-color: transparent;
+}
+
+.composer-mode.mode-acceptEdits {
+  background: var(--green-400, #7aae66);
+  color: var(--charcoal);
+  border: 0;
+}
+.composer-mode.mode-acceptEdits:hover,
+.composer-mode.mode-acceptEdits.is-open {
+  background: var(--green-300, #b0d2a3);
+  border-color: transparent;
+}
+
+.composer-mode.mode-bypassPermissions {
+  background: var(--red-500, #de5555);
+  color: var(--cream);
+  border: 0;
+}
+.composer-mode.mode-bypassPermissions:hover,
+.composer-mode.mode-bypassPermissions.is-open {
+  background: var(--red-400, #ea7f7f);
+  border-color: transparent;
+}
+
+.composer-mode.mode-askPermissions {
+  background: var(--gold-400, #cab43e);
+  color: var(--charcoal);
+  border: 0;
+}
+.composer-mode.mode-askPermissions:hover,
+.composer-mode.mode-askPermissions.is-open {
+  background: var(--gold-300, #d8cc6c);
+  border-color: transparent;
+}
+
+/* === Code blocks dentro de mensagem assistant === */
+
+/* Wrapper relativo pra ancorar os botões Apply + Copy no canto superior direito. */
+.msg-code-block {
+  position: relative;
+}
+.msg-code-block > .msg-codeblock {
+  margin: 0;
+}
+
+.msg-codeblock {
+  background: var(--editor-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  margin: var(--space-2) 0;
+  overflow-x: auto;
+  position: relative;
+  font-family: var(--font-mono) !important;
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.msg-codeblock code {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Badge da linguagem no canto superior esquerdo (acima do code) */
+.msg-codeblock[data-lang]:not([data-lang=""])::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 6px;
+  left: 12px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  pointer-events: none;
+}
+
+/* Botão copy no canto superior direito */
+.msg-codeblock-copy {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  padding: 3px 8px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out-expo),
+              background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.msg-codeblock:hover .msg-codeblock-copy {
+  opacity: 1;
+}
+.msg-codeblock-copy:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-subtle);
+  color: var(--fg-primary);
+}
+.msg-codeblock-copy .codicon {
+  font-size: 12px;
+}
+
+/* Botão Apply — ao lado do copy, mesmo estilo mas destacado em accent. */
+.msg-code-apply {
+  position: absolute;
+  top: 4px;
+  right: 72px; /* desloca pra esquerda do copy (~64px de largura) */
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--fg-secondary);
+  background: var(--bg-subtle);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out-expo),
+              background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.msg-code-block:hover .msg-code-apply {
+  opacity: 1;
+}
+.msg-code-apply:hover {
+  background: var(--accent-subtle, var(--bg-elevated));
+  border-color: var(--accent, var(--border-subtle));
+  color: var(--accent-fg, var(--fg-primary));
+}
+.msg-code-apply .codicon {
+  font-size: 12px;
+}
+
+/* Padding extra top pra acomodar o badge da lang */
+.msg-codeblock[data-lang]:not([data-lang=""]) {
+  padding-top: var(--space-5);
+}
+
+/* Inline code dentro de texto do assistant */
+.msg-inline-code {
+  background: var(--bg-input);
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  border: 1px solid var(--border-subtle);
+  font-weight: 400;
+}
+
+/* Tool running — 3 dots animados (Claude Code-style) */
+.msg-tool.is-running {
+  border-color: color-mix(in oklab, var(--accent) 25%, var(--border-subtle));
+}
+
+.msg-tool-running {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 2px;
+}
+
+.msg-tool-running-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: toolRunningPulse 1.4s ease-in-out infinite;
+}
+.msg-tool-running-dot:nth-child(1) { animation-delay: 0s; }
+.msg-tool-running-dot:nth-child(2) { animation-delay: 0.18s; }
+.msg-tool-running-dot:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes toolRunningPulse {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Icon button (+ e mic) */
+.composer-icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  height: 24px;
+  min-width: 24px;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;            /* circular hover tipo Cursor/Antigravity */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-content: center;
+  gap: 2px;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.composer-icon-btn .codicon {
+  font-size: 15px;          /* legível tipo Cursor/Antigravity (era 12px apertado) */
+}
+.composer-icon-btn .composer-chevron {
+  font-size: 10px;
+  opacity: 0.7;
+}
+.composer-icon-btn:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+.composer-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.composer-icon-btn.is-open {
+  background: var(--bg-elevated);                /* cinza sutil (não orange) */
+  color: var(--fg-primary);                      /* branco quente (não accent) */
+  border-color: var(--border-subtle);
+}
+/* Mic recording state — vermelho pulsando pra indicar áudio capturando */
+.composer-mic-btn.is-recording {
+  color: var(--red, #e5484d);
+  background: color-mix(in srgb, var(--red, #e5484d) 14%, transparent);
+}
+.composer-mic-btn.is-recording .codicon {
+  animation: mic-pulse 1s ease-in-out infinite;
+}
+@keyframes mic-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.92); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .composer-mic-btn.is-recording .codicon { animation: none; }
+}
+/* Rotação 45° SÓ no botão `+` (vira `×`). Mic NÃO rotaciona. */
+.composer-icon-btn.is-open .codicon-add {
+  transform: rotate(45deg);
+  transition: transform var(--duration-fast) var(--ease-out-expo);
+}
+
+/* Model label (= "Opus 4.7 1M · Max" do Claude Code) — agora button clicável */
+.composer-model {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  max-width: 140px;             /* trunca antes de empurrar context ring + send */
+  min-width: 0;
+  flex-shrink: 1;
+  flex-basis: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 6px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+.composer-model:hover,
+.composer-model.is-open {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+  border-color: var(--border-subtle);
+}
+
+.composer-model-effort {
+  color: var(--fg-muted);
+}
+
+/* Wrapper do model + tooltip de context */
+.composer-model-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Tooltip antigo removido — substituido pelo UsagePopover */
+
+/* Memory badge — indica UNDERCODE.md/CLAUDE.md carregado */
+.composer-memory-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: var(--bg-input);
+  color: var(--fg-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+.composer-memory-badge .codicon {
+  font-size: 11px;
+  color: var(--accent);
+}
+
+/* Send button (= o circle button do Claude Code) */
+.composer-send {
+  background: var(--accent-gradient);       /* brand kit gradient #E97B52 → #FF9D72 */
+  color: var(--charcoal);
+  border: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: filter var(--duration-fast) var(--ease-out-expo),
+              transform var(--duration-instant) var(--ease-out-expo),
+              opacity var(--duration-fast) var(--ease-out-expo);
+}
+.composer-send .codicon {
+  font-size: 14px;
+}
+.composer-send:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+.composer-send:active:not(:disabled) {
+  transform: scale(0.92);
+}
+.composer-send:disabled {
+  background: var(--bg-elevated);
+  color: var(--fg-disabled);
+  cursor: not-allowed;
+}
+
+/* Busy state — spinner outline (estilo Claude Code "thinking") */
+.composer-send.is-busy {
+  background: transparent;
+  border: 1.5px solid color-mix(in oklab, var(--accent) 30%, transparent);
+  color: var(--accent);
+  position: relative;
+  overflow: hidden;
+}
+.composer-send.is-busy::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border: 1.5px solid transparent;
+  border-top-color: var(--accent);
+  border-right-color: var(--accent);
+  border-radius: 50%;
+  animation: composerBusySpin 0.9s linear infinite;
+}
+.composer-send.is-busy .codicon {
+  font-size: 10px;
+  opacity: 0;                              /* escondido por padrão */
+  transition: opacity var(--duration-fast) var(--ease-out-expo);
+  z-index: 2;
+}
+.composer-send.is-busy:hover .codicon {
+  opacity: 1;                              /* mostra stop icon ao passar mouse */
+}
+.composer-send.is-busy:hover::before {
+  animation-play-state: paused;
+}
+@keyframes composerBusySpin {
+  to { transform: rotate(360deg); }
+}

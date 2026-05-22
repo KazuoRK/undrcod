@@ -1,0 +1,473 @@
+/*
+ * ToolCard — visual rico pra chamadas de ferramenta.
+ *
+ * Estrutura:
+ *   .tool-card
+ *     .tool-card-header   (clickable, sempre visível)
+ *       .tool-card-icon-wrap  (tile 28x28 com tint accent)
+ *       .tool-card-title  (nome + separador + summary)
+ *       .tool-card-status-slot
+ *       .tool-card-caret  (chevron rotaciona 90 quando expanded)
+ *     .tool-card-body-wrap  (max-height transition)
+ *       .tool-card-body
+ *         .tool-card-section (Entrada / Saída)
+ *
+ * Design tokens usados:
+ *   --accent, --bg-panel/elevated/input, --fg-primary/secondary/muted,
+ *   --border-subtle/strong, --green-500, --red-500, --orange-500,
+ *   --font-body, --font-mono, --duration-base, --ease-out-expo.
+ *
+ * Notas de implementacao:
+ *   - Header e <button> pra acessibilidade nativa (Enter/Space).
+ *   - Caret usa transform pra animar rotacao smooth.
+ *   - Body usa max-height + opacity pra slide-in; max-height grande o suficiente
+ *     (2000px) cobre quase todo output; pra grow alem disso usa overflow-y
+ *     interno da pre.tool-card-output.
+ *   - Card appearing: opacity 0→1 + translateY 4px→0 no mount inicial.
+ */
+
+.tool-card {
+  position: relative;
+  /* Visual mais sutil — quase invisível border, background levemente diferente
+   * do canvas. Tool cards são SECUNDÁRIOS na conversa, não devem competir
+   * com bubbles. */
+  background: color-mix(in oklab, var(--bg-elevated) 40%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border-subtle) 50%, transparent);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: var(--text-base);
+  color: var(--fg-secondary);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity var(--duration-base) var(--ease-out-expo),
+    transform var(--duration-base) var(--ease-out-expo),
+    border-color var(--duration-base) var(--ease-out-expo),
+    background var(--duration-fast, 140ms) var(--ease-out-expo),
+    box-shadow var(--duration-base) var(--ease-out-expo);
+}
+
+/* Hover sutil no card inteiro (não-expandido) — feedback de "clicável" sem
+ * competir com bubbles. Border ganha tint accent, background eleva levemente. */
+.tool-card:hover:not(.is-expanded):not(.has-error) {
+  background: color-mix(in oklab, var(--bg-elevated) 55%, transparent);
+  border-color: color-mix(in oklab, var(--border-subtle) 90%, transparent);
+}
+
+.tool-card.is-appeared {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tool-card.is-expanded {
+  border-color: color-mix(in oklab, var(--accent) 24%, var(--border-strong));
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.18),
+    0 0 0 1px color-mix(in oklab, var(--accent) 14%, transparent);
+}
+
+.tool-card.is-running {
+  border-color: color-mix(in oklab, var(--accent) 32%, var(--border-subtle));
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--accent) 12%, transparent),
+    0 0 16px color-mix(in oklab, var(--accent) 12%, transparent);
+}
+
+.tool-card.has-error {
+  border-color: color-mix(in oklab, var(--red-500) 44%, var(--border-subtle));
+}
+
+.tool-card.has-error.is-expanded {
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.18),
+    0 0 0 1px color-mix(in oklab, var(--red-500) 18%, transparent);
+}
+
+/* === Header (button) ============================================== */
+
+.tool-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  /* Compacto mas confortável: 7/12 padding. Com icon 32x32 a altura total fica
+   * ~46px — close enough ao "1 linha confortável" do Cursor/Linear. */
+  padding: 7px 12px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--duration-fast, 140ms) var(--ease-out-expo);
+}
+
+.tool-card-header:hover {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+.tool-card-header:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--accent) 50%, transparent);
+}
+
+/* Icon tile — wrapper pra centralizar codicon perfeito.
+ * font-size:0 + line-height:0 zera baseline-shift do glyph. */
+.tool-card-icon-wrap {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  border-radius: var(--radius-lg);
+  font-size: 0;
+  line-height: 0;
+  transition: background var(--duration-fast, 140ms) var(--ease-out-expo);
+}
+
+.tool-card-icon-wrap .codicon {
+  font-size: 15px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.tool-card.has-error .tool-card-icon-wrap {
+  background: color-mix(in srgb, var(--red-500) 14%, transparent);
+  color: var(--red-500);
+}
+
+.tool-card.is-running .tool-card-icon-wrap {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.tool-card-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.tool-card-name {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-primary);
+  letter-spacing: 0.01em;
+}
+
+.tool-card-sep {
+  flex: 0 0 auto;
+  color: var(--fg-disabled);
+  font-size: 12px;
+  user-select: none;
+}
+
+.tool-card-summary {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--fg-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-card-summary.is-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-secondary);
+  letter-spacing: 0;
+}
+
+.tool-card-shell-prompt {
+  color: var(--fg-muted);
+  margin-right: 1px;
+  user-select: none;
+}
+
+/* === Status pill =================================================== */
+
+.tool-card-status-slot {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.tool-card-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  color: var(--fg-muted);
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--bg-elevated) 55%, transparent);
+  border: 1px solid transparent;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.tool-card-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+}
+
+.tool-card-status.is-ok {
+  color: var(--green-500);
+  background: color-mix(in oklab, var(--green-500) 8%, transparent);
+  border-color: color-mix(in oklab, var(--green-500) 18%, transparent);
+}
+
+.tool-card-status.is-error {
+  color: var(--red-500);
+  background: color-mix(in oklab, var(--red-500) 10%, transparent);
+  border-color: color-mix(in oklab, var(--red-500) 22%, transparent);
+}
+
+.tool-card-status.is-running {
+  color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  border-color: color-mix(in oklab, var(--accent) 22%, transparent);
+}
+
+.tool-card-status.is-running .codicon {
+  font-size: 11px;
+}
+
+.tool-card-status.is-running .tool-card-status-dot {
+  animation: tool-card-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes tool-card-pulse {
+  0%, 100% { transform: scale(0.85); opacity: 0.7; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+/* === Caret ========================================================= */
+
+.tool-card-caret {
+  flex: 0 0 auto;
+  color: var(--fg-muted);
+  font-size: 11px !important;
+  transition: transform var(--duration-base) var(--ease-out-expo),
+              color var(--duration-fast, 140ms) var(--ease-out-expo);
+  transform: rotate(0deg);
+  margin-left: 2px;
+}
+
+.tool-card-caret.is-open {
+  transform: rotate(90deg);
+  color: var(--fg-secondary);
+}
+
+.tool-card-header:hover .tool-card-caret {
+  color: var(--fg-secondary);
+}
+
+/* === Body (expand/collapse) ======================================= */
+
+.tool-card-body-wrap {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  /* Closing: max-height encolhe rápido (cubic-bezier sharp) + opacity adianta.
+   * Opening (.is-open): max-height expande com ease-out-expo + opacity atrasa
+   * pra evitar flash do conteúdo antes da altura abrir. */
+  transition:
+    max-height var(--duration-base) cubic-bezier(0.4, 0, 0.2, 1),
+    opacity calc(var(--duration-base) * 0.6) var(--ease-out-expo),
+    border-top-color var(--duration-base) var(--ease-out-expo);
+  border-top: 1px solid transparent;
+}
+
+.tool-card-body-wrap.is-open {
+  max-height: 2400px;
+  opacity: 1;
+  border-top-color: color-mix(in oklab, var(--border-subtle) 70%, transparent);
+  transition:
+    max-height var(--duration-base) var(--ease-out-expo),
+    opacity var(--duration-base) var(--ease-out-expo) 60ms,
+    border-top-color var(--duration-fast, 140ms) var(--ease-out-expo);
+}
+
+.tool-card-body {
+  padding: 12px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* === Sections ====================================================== */
+
+.tool-card-section {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.tool-card-section.is-error-section .tool-card-code {
+  border-left: 2px solid color-mix(in oklab, var(--red-500) 70%, transparent);
+}
+
+/* Inline error preview (modo Normal, tool com erro, ainda colapsado) — mostra
+ * só a saída do erro sem expandir o body inteiro (sem entrada/comando).
+ * Economiza altura visual sem esconder o erro propriamente dito. */
+.tool-card-error-preview {
+  padding: var(--space-3, 10px) var(--space-3, 12px) var(--space-3, 12px);
+  border-top: 1px solid color-mix(in oklab, var(--red-500) 22%, var(--border-subtle));
+  background: color-mix(in oklab, var(--red-500) 4%, transparent);
+}
+.tool-card-error-preview .tool-card-output {
+  margin-top: 0;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-left: 10px;
+  border-left: 2px solid color-mix(in oklab, var(--red-500) 60%, transparent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.tool-card-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tool-card-section-label {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  line-height: 1;
+}
+
+.tool-card-code {
+  margin: 0;
+  padding: 10px 12px;
+  background: color-mix(in oklab, var(--bg-input) 92%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border-subtle) 55%, transparent);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fg-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+.tool-card-code code {
+  font-family: inherit;
+  font-size: inherit;
+  background: transparent;
+  padding: 0;
+}
+
+.tool-card-output {
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  color: var(--fg-secondary);
+}
+
+/* Subtle scrollbar pra output */
+.tool-card-output::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.tool-card-output::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tool-card-output::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--fg-muted) 30%, transparent);
+  border-radius: var(--radius-sm);
+}
+.tool-card-output::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--fg-muted) 50%, transparent);
+}
+
+/* === Copy button =================================================== */
+
+.tool-card-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast, 140ms) var(--ease-out-expo),
+    color var(--duration-fast, 140ms) var(--ease-out-expo),
+    border-color var(--duration-fast, 140ms) var(--ease-out-expo);
+}
+
+.tool-card-copy:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+  border-color: var(--border-subtle);
+}
+
+.tool-card-copy:focus-visible {
+  outline: none;
+  border-color: color-mix(in oklab, var(--accent) 60%, transparent);
+  color: var(--fg-primary);
+}
+
+.tool-card-copy .codicon {
+  font-size: 11px;
+}
+
+/* === Empty state =================================================== */
+
+.tool-card-empty {
+  font-size: 12px;
+  color: var(--fg-muted);
+  font-style: italic;
+  padding: 4px 2px;
+}
+
+.tool-card-empty.is-running {
+  color: var(--accent);
+  font-style: normal;
+}
+
+/* === Reduced motion ================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-card,
+  .tool-card-header,
+  .tool-card-icon-wrap,
+  .tool-card-caret,
+  .tool-card-body-wrap,
+  .tool-card-status.is-running .tool-card-status-dot,
+  .tool-card-copy {
+    transition: none;
+    animation: none;
+  }
+  .tool-card {
+    transform: none;
+    opacity: 1;
+  }
+}

@@ -1,0 +1,84 @@
+/* OverlayScrollbar — thumb sutil que aparece só no hover do parent.
+ *
+ * Convention de uso (consumer):
+ *   .my-container {
+ *     position: relative;          (anchor pro thumb absolute)
+ *   }
+ *   .my-scroll-area {
+ *     overflow-x: auto / overflow-y: auto;
+ *     scrollbar-width: none;        (Firefox)
+ *   }
+ *   .my-container .my-scroll-area::-webkit-scrollbar { display: none !important; }
+ *
+ * O thumb é renderizado pelo <OverlayScrollbar> como sibling do scroll area.
+ * Aparece quando user passa mouse pelo parent que tem `position: relative`.
+ *
+ * Cores literais do Cursor (workbench.desktop.main.css):
+ *   --vscode-scrollbarSlider-background:       color-mix(in srgb, text-primary 24%, transparent)
+ *   --vscode-scrollbarSlider-hoverBackground:  34%
+ *   --vscode-scrollbarSlider-activeBackground: 44%
+ */
+
+.overlay-scrollbar {
+  position: absolute;
+  border-radius: 2px;
+  background-color: color-mix(in srgb, var(--fg-primary) 24%, transparent);
+  opacity: 0;
+  cursor: grab;
+  z-index: 2;
+  transition:
+    opacity 200ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)),
+    background-color 120ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)),
+    width 120ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)),
+    height 120ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+/* Horizontal — bottom-anchored, ocupa altura fina. JS controla width+translateX. */
+.overlay-scrollbar-horizontal {
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  width: 32px; /* placeholder; JS sobrescreve */
+}
+
+/* Vertical — right-anchored. JS controla height+translateY. */
+.overlay-scrollbar-vertical {
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 32px; /* placeholder; JS sobrescreve */
+}
+
+/* Hover direto no thumb: cresce sutilmente + fica mais visível. */
+.overlay-scrollbar:hover {
+  background-color: color-mix(in srgb, var(--fg-primary) 34%, transparent);
+}
+.overlay-scrollbar-horizontal:hover {
+  height: 6px;
+}
+.overlay-scrollbar-vertical:hover {
+  width: 6px;
+}
+
+/* Active (dragging) — cor máxima + cursor grabbing. */
+.overlay-scrollbar:active {
+  background-color: color-mix(in srgb, var(--fg-primary) 44%, transparent);
+  cursor: grabbing;
+}
+.overlay-scrollbar-horizontal:active {
+  height: 6px;
+}
+.overlay-scrollbar-vertical:active {
+  width: 6px;
+}
+
+/* Consumer ativa visibility com `.has-overlay-scrollbar` no parent que tem hover.
+ * Default: invisível + pointer-events none (pra não bloquear clicks). */
+.has-overlay-scrollbar .overlay-scrollbar {
+  pointer-events: none;
+}
+
+.has-overlay-scrollbar:hover .overlay-scrollbar {
+  opacity: 1;
+  pointer-events: auto;
+}

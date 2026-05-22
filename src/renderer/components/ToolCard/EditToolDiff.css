@@ -1,0 +1,269 @@
+/*
+ * EditToolDiff — visual de diff inline (Edit/Write/MultiEdit).
+ *
+ * Layout: grid de 4 colunas por linha — gutter-old | gutter-new | marker | text.
+ * Cor: bg tintado (success/red) + texto contrastante; marker (+/−) acentua;
+ *      linhas context ficam em fg-secondary com bg neutro.
+ *
+ * Tokens usados: --green-500, --red-500, --accent-success (fallback verde),
+ *   --red (fallback), --bg-elevated, --border-subtle, --fg-primary/secondary/muted,
+ *   --font-mono, --radius-md.
+ */
+
+.edit-tool-diff {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12px;
+  line-height: 1.55;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg, 8px);
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.edit-tool-diff-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: color-mix(in oklab, var(--bg-elevated) 60%, var(--bg-panel));
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 11px;
+}
+
+.edit-tool-diff-variant {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 10px;
+  color: var(--fg-muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--accent, #4b8) 14%, transparent);
+  color: color-mix(in oklab, var(--accent, #4b8) 90%, var(--fg-primary));
+}
+
+.edit-tool-diff-path {
+  flex: 1;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.edit-tool-diff-totals {
+  display: inline-flex;
+  gap: 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+}
+
+.edit-tool-diff-stat-add {
+  color: var(--green-500, #4caf50);
+  font-weight: 600;
+}
+
+.edit-tool-diff-stat-rem {
+  color: var(--red-500, #e57373);
+  font-weight: 600;
+}
+
+/* === Hunks ============================================================ */
+
+.edit-tool-diff-hunks {
+  display: flex;
+  flex-direction: column;
+}
+
+.edit-tool-diff-hunk + .edit-tool-diff-hunk {
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.edit-tool-diff-hunk-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  background: color-mix(in oklab, var(--bg-panel) 70%, transparent);
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 10px;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.edit-tool-diff-hunk-label {
+  font-weight: 600;
+}
+
+.edit-tool-diff-hunk-stats {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.edit-tool-diff-pre {
+  margin: 0;
+  padding: 4px 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* === Linhas ============================================================ */
+
+.edit-tool-diff-line {
+  display: grid;
+  grid-template-columns: 40px 40px 18px 1fr;
+  align-items: baseline;
+  padding: 0 4px 0 0;
+  min-height: 1.55em;
+}
+
+.edit-tool-diff-gutter {
+  text-align: right;
+  padding: 0 8px;
+  color: var(--fg-muted);
+  user-select: none;
+  font-size: 10.5px;
+  opacity: 0.7;
+  border-right: 1px solid color-mix(in oklab, var(--border-subtle) 60%, transparent);
+}
+
+.edit-tool-diff-gutter-new {
+  border-right: 1px solid color-mix(in oklab, var(--border-subtle) 80%, transparent);
+}
+
+.edit-tool-diff-marker {
+  text-align: center;
+  font-weight: 700;
+  user-select: none;
+  color: var(--fg-muted);
+}
+
+.edit-tool-diff-text {
+  white-space: pre;
+  color: var(--fg-secondary);
+  padding-left: 4px;
+}
+
+/* Add line */
+.edit-tool-diff-line-add {
+  background: color-mix(in srgb, var(--accent-success, var(--green-500, #4caf50)) 15%, transparent);
+}
+.edit-tool-diff-line-add .edit-tool-diff-marker {
+  color: var(--green-500, #4caf50);
+}
+.edit-tool-diff-line-add .edit-tool-diff-text {
+  color: var(--fg-primary);
+}
+.edit-tool-diff-line-add .edit-tool-diff-gutter-new {
+  color: color-mix(in oklab, var(--green-500, #4caf50) 70%, var(--fg-muted));
+  opacity: 1;
+}
+
+/* Remove line */
+.edit-tool-diff-line-remove {
+  background: color-mix(in srgb, var(--red, var(--red-500, #e57373)) 15%, transparent);
+}
+.edit-tool-diff-line-remove .edit-tool-diff-marker {
+  color: var(--red-500, #e57373);
+}
+.edit-tool-diff-line-remove .edit-tool-diff-text {
+  color: var(--fg-primary);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--red-500, #e57373) 50%, transparent);
+  text-decoration-thickness: 1px;
+}
+.edit-tool-diff-line-remove .edit-tool-diff-gutter-old {
+  color: color-mix(in oklab, var(--red-500, #e57373) 70%, var(--fg-muted));
+  opacity: 1;
+}
+
+/* Context line */
+.edit-tool-diff-line-context {
+  background: transparent;
+}
+
+/* Variantes — write não tem remove side, então gutter-old some */
+.edit-tool-diff-write .edit-tool-diff-gutter-old {
+  display: none;
+}
+.edit-tool-diff-write .edit-tool-diff-line {
+  grid-template-columns: 48px 18px 1fr;
+}
+
+/* === Hunk ativo (navegação Alt+J/K) ==================================== */
+
+.edit-tool-diff-hunk {
+  position: relative;
+  border-left: 2px solid transparent;
+  transition: border-left-color 120ms ease, background-color 120ms ease;
+}
+
+.edit-tool-diff-hunk.is-active-hunk {
+  border-left-color: var(--accent, #4b8);
+  background: color-mix(in oklab, var(--accent, #4b8) 4%, transparent);
+}
+
+/* Position chip "1/3" no header */
+.edit-tool-diff-hunk-pos {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--accent, #4b8) 14%, transparent);
+  color: color-mix(in oklab, var(--accent, #4b8) 85%, var(--fg-primary));
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.edit-tool-diff-hunk-count {
+  opacity: 0.55;
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+/* Keyboard hint chips — só aparecem em hover */
+.edit-tool-diff-kbd-hint {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  opacity: 0;
+  transform: translateX(4px);
+  transition: opacity 140ms ease, transform 140ms ease;
+  pointer-events: none;
+}
+
+.edit-tool-diff.is-keyboard-active .edit-tool-diff-kbd-hint {
+  opacity: 0.85;
+  transform: translateX(0);
+}
+
+.edit-tool-diff-kbd {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--bg-panel) 80%, transparent);
+  border: 1px solid var(--border-subtle);
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+
+/* Hover state — sutil border-accent no container inteiro */
+.edit-tool-diff.is-keyboard-active {
+  border-color: color-mix(in oklab, var(--accent, #4b8) 50%, var(--border-subtle));
+}
+
+/* Applying — pulso dim enquanto o write tá em flight */
+.edit-tool-diff.is-applying {
+  opacity: 0.85;
+  pointer-events: none;
+}

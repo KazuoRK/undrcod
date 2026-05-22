@@ -1,0 +1,52 @@
+/*
+ * Splitter — drag handle entre panes.
+ * 4px de largura/altura, hover/active mostra accent color.
+ */
+
+.splitter {
+  flex-shrink: 0;
+  background: transparent;
+  position: relative;
+  z-index: 20;   /* acima dos panels (.pane-left tem z-index: 5) — senão o panel
+                    bloqueia eventos de mouse na hit-area estendida do splitter,
+                    e o usuário precisa clicar exatamente no centro do 4px. */
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+
+.splitter-vertical {
+  width: 4px;
+  cursor: col-resize;
+  align-self: stretch;
+}
+
+.splitter-horizontal {
+  height: 4px;
+  cursor: row-resize;
+  width: 100%;
+}
+
+.splitter:hover {
+  background: var(--accent-soft, var(--border-strong));
+}
+
+.splitter.is-dragging {
+  background: var(--accent);
+}
+
+/* Hit-area maior que o visual: pseudo-element transparente estende 8px
+ * pra cobrir gap entre panels — usuário pode clicar perto da borda do card. */
+.splitter::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.splitter-vertical::before {
+  left: -8px;
+  right: -8px;
+}
+
+.splitter-horizontal::before {
+  top: -8px;
+  bottom: -8px;
+}

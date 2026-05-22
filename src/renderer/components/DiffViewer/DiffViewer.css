@@ -1,0 +1,209 @@
+/*
+ * DiffViewer — inline git diff em Monaco DiffEditor side-by-side.
+ *
+ * Layout:
+ *   container (flex column, height 100%)
+ *     ├─ navbar (36px fixo, hunk counter + botões)
+ *     └─ editor-wrap (flex: 1, Monaco DiffEditor fill)
+ *
+ * Tokens: usa --surface-1/--border-subtle/--accent do global.css.
+ * Botões usam .kbd / .kbd-row pra chips de atalho (consistência UNDRCOD).
+ */
+
+.diff-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--surface-1, #1a1a1a);
+  color: var(--fg-primary, #e4e4e4);
+  font-family: var(--font-body);
+}
+
+.diff-viewer--empty {
+  align-items: center;
+  justify-content: center;
+}
+
+.diff-viewer__empty-state {
+  text-align: center;
+  padding: 24px;
+  color: var(--fg-muted);
+}
+
+.diff-viewer__empty-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--fg-secondary, #b8b8b8);
+}
+
+.diff-viewer__empty-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+
+/* Navbar */
+.diff-viewer__navbar {
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border-subtle, #2a2a2a);
+  background: var(--surface-1, #1a1a1a);
+  font-size: 12px;
+  user-select: none;
+}
+
+.diff-viewer__path {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-secondary, #b8b8b8);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40%;
+  min-width: 0;
+}
+
+.diff-viewer__hunk-counter {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-muted);
+  flex: 0 0 auto;
+}
+
+.diff-viewer__hunk-num {
+  color: var(--accent, #E97B52);
+  font-weight: 600;
+}
+
+.diff-viewer__nav-spacer {
+  flex: 1 1 auto;
+}
+
+/* Botões — compactos, com chip kbd */
+.diff-viewer__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle, #2a2a2a);
+  background: transparent;
+  color: var(--fg-secondary, #b8b8b8);
+  font-family: var(--font-body);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.diff-viewer__btn:hover:not(:disabled) {
+  background: var(--surface-2, #252525);
+  border-color: var(--fg-muted, #6a6a6a);
+  color: var(--fg-primary, #e4e4e4);
+}
+
+.diff-viewer__btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.diff-viewer__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.diff-viewer__btn-label {
+  font-weight: 500;
+}
+
+.diff-viewer__btn--accept {
+  border-color: color-mix(in oklab, var(--accent, #E97B52) 40%, transparent);
+  color: var(--accent, #E97B52);
+}
+
+.diff-viewer__btn--accept:hover:not(:disabled) {
+  background: var(--accent-soft, rgba(233, 123, 82, 0.12));
+  border-color: var(--accent, #E97B52);
+  color: var(--accent-hover, #FF9D72);
+}
+
+.diff-viewer__btn--reject {
+  border-color: color-mix(in oklab, #c44545 40%, transparent);
+  color: #d97070;
+}
+
+.diff-viewer__btn--reject:hover:not(:disabled) {
+  background: rgba(196, 69, 69, 0.12);
+  border-color: #c44545;
+  color: #e88a8a;
+}
+
+/* Divider entre cluster per-hunk e "Reject all (file)" — separação visual */
+.diff-viewer__btn-divider {
+  flex: 0 0 1px;
+  align-self: stretch;
+  margin: 6px 4px;
+  background: var(--border-subtle, #2a2a2a);
+}
+
+/* Reject all (file) — variante destrutiva, mais discreta que o reject per-hunk
+   pra evitar misclick. Sem chip kbd porque não tem atalho (proteção extra). */
+.diff-viewer__btn--reject-all {
+  border-color: color-mix(in oklab, #c44545 30%, transparent);
+  color: var(--fg-muted, #6a6a6a);
+}
+
+.diff-viewer__btn--reject-all:hover:not(:disabled) {
+  background: rgba(196, 69, 69, 0.10);
+  border-color: #c44545;
+  color: #d97070;
+}
+
+.diff-viewer__btn-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* Banner de erro inline — só renderiza quando o parent passa error != null.
+   Visual: barra vermelha discreta logo abaixo do navbar, acima do editor. */
+.diff-viewer__error {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: color-mix(in oklab, var(--accent-error, #c44545) 14%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--accent-error, #c44545) 40%, transparent);
+  color: color-mix(in oklab, var(--accent-error, #c44545) 70%, var(--fg-primary, #e4e4e4));
+  font-family: var(--font-body);
+  font-size: 11px;
+}
+
+.diff-viewer__error-icon {
+  font-size: 13px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.diff-viewer__error-text {
+  flex: 1 1 auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Editor wrapper — Monaco precisa de container com altura definida pra automaticLayout */
+.diff-viewer__editor-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+}
+
+/* Hide overflow scroll do container — o Monaco gerencia o próprio scroll */
+.diff-viewer__editor-wrap > section,
+.diff-viewer__editor-wrap > div {
+  height: 100%;
+}

@@ -1,0 +1,406 @@
+/*
+ * FileTree — design system v2 (Linear/Raycast vibe)
+ *
+ * Density alta, ícones neutros (não gold decorativo), header pequeno.
+ */
+
+.filetree {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-panel);
+  border-right: 1px solid color-mix(in srgb, var(--border-subtle) 60%, transparent);
+  min-width: 0;
+  /* Anchor pro <OverlayScrollbar> sibling do .filetree-body (position:absolute) */
+  position: relative;
+}
+
+.filetree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--pane-topbar-height);     /* altura segue token */
+  padding: 0 var(--space-3);
+  background: var(--bg-panel);           /* tom escuro do FileTree — NÃO usa --pane-topbar-bg (que é só pra strip superior) */
+  border-bottom: none;                   /* sem linha entre header e file list — visual mais clean */
+  flex-shrink: 0;
+}
+
+.filetree-title {
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  color: var(--fg-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.filetree-title .codicon {
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* Versão clicável do title (com chevron de collapse) — neutraliza estilo button */
+.filetree-title-toggle {
+  background: transparent;
+  border: none;
+  padding: 2px 4px;
+  margin: -2px -4px;             /* compensa o padding pra alinhar com layout original */
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.filetree-title-toggle:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-secondary);
+}
+.filetree-title-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* Row de action buttons à direita do projeto name (New File / New Folder / Refresh / Collapse) */
+.filetree-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;                                /* sem gap entre botões — colados tipo VS Code */
+  opacity: 0.7;
+  transition: opacity var(--duration-fast) var(--ease-out-expo);
+}
+.filetree-header:hover .filetree-actions {
+  opacity: 1;
+}
+
+.filetree-button {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 2px 4px;                      /* era 2px 8px — bem mais compacto */
+  border-radius: var(--radius-sm);
+  font-size: 12px;                       /* era var(--text-base) 13px — codicons menores */
+  line-height: 1;
+  line-height: 1;
+  transition: color var(--duration-fast) var(--ease-out-expo),
+              background var(--duration-fast) var(--ease-out-expo);
+}
+.filetree-button:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-secondary);
+}
+.filetree-button.is-active {
+  background: var(--bg-active);
+  color: var(--accent);
+}
+
+/* Filter inline — input compacto que aparece logo abaixo do header quando
+ * o user clica no botão filter. Auto-foca no mount; Esc fecha e limpa. */
+.filetree-filter {
+  flex-shrink: 0;
+  padding: 4px var(--space-3) 6px;
+  background: var(--bg-panel);
+}
+.filetree-filter-input {
+  width: 100%;
+  height: 22px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  background: var(--bg-input, var(--bg-elevated));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--fg-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  line-height: 1;
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-out-expo),
+              box-shadow var(--duration-fast) var(--ease-out-expo);
+}
+.filetree-filter-input::placeholder {
+  color: var(--fg-disabled);
+}
+.filetree-filter-input:focus {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.filetree-cwd {
+  padding: 0 var(--space-3) var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-secondary);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.filetree-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-1) 0;
+  /* Scrollbar nativa escondida — <OverlayScrollbar> cuida do visual */
+  scrollbar-width: none;
+}
+.filetree .filetree-body::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.filetree-hint {
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-2xs);
+  color: var(--fg-disabled);
+  border-top: 1px solid var(--border-subtle);
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* File row — VS Code/Cursor pattern: dense, flat, full-width, sem accent-tint.
+ * Items vão até a borda do pane (sem margin), corners quase quadrados, hover/active
+ * usam superfícies flat (bg-elevated / bg-active) sem ring nem cor accent.
+ *
+ * Indent guides: linhas verticais sutis a cada 14px de profundidade, renderizadas
+ * via pseudo-element ::before com repeating-linear-gradient. A profundidade vem
+ * via CSS variable --depth (passada pelo inline style do React). */
+.filetree-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;                              /* gap mais apertado (era var(--space-2) = 8px) */
+  padding: 2px var(--space-3);
+  margin: 0;                             /* sem gap horizontal — extend até a borda */
+  cursor: pointer;
+  font-size: 0.719rem;                   /* 11.5px — meio termo entre UNDRCOD 12px e Cursor 11px */
+  color: var(--fg-secondary);
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  height: 22px;                          /* IDE-dense (Cursor/VS Code) */
+  border-radius: 2px;                    /* corners minimais — quase squared */
+  transition:
+    background var(--duration-fast) var(--ease-out-expo),
+    color var(--duration-fast) var(--ease-out-expo);
+}
+.filetree-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 8px;
+  width: calc(var(--depth, 0) * 14px);
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--border-subtle) 0,
+    var(--border-subtle) 1px,
+    transparent 1px,
+    transparent 14px
+  );
+  pointer-events: none;
+  opacity: 0.7;
+}
+.filetree-item:hover {
+  background: var(--bg-elevated);        /* flat, sem accent tint */
+  color: var(--fg-primary);
+}
+.filetree-item.is-dir {
+  font-weight: 400;                      /* dirs ≠ files visualmente só pelo chevron */
+}
+.filetree-item.is-active {
+  background: var(--bg-active);          /* flat, sem ring nem tint */
+  color: var(--fg-primary);
+}
+.filetree-item.is-active .filetree-name {
+  color: var(--fg-primary);              /* texto primary, não accent */
+}
+.filetree-item:active {
+  background: var(--bg-active);
+}
+
+.filetree-chevron {
+  display: inline-block;
+  width: 10px;
+  text-align: center;
+  font-size: 8px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+.filetree-chevron-spacer {
+  display: inline-block;
+  width: 10px;
+  flex-shrink: 0;
+}
+
+.filetree-icon {
+  font-size: 13px;                       /* era 14px — reduzido pra acompanhar font menor */
+  flex-shrink: 0;
+  /* color comes from inline style (per-file type) */
+  opacity: 0.88;
+  transition: opacity var(--duration-instant) var(--ease-out-expo);
+}
+.filetree-item:hover .filetree-icon {
+  opacity: 1;
+}
+
+.filetree-chevron.codicon {
+  font-size: 11px !important;          /* era 12px — acompanha font menor do item */
+  color: var(--fg-muted);
+  width: 12px;
+  text-align: center;
+}
+
+.filetree-name {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Botão @ que aparece no hover, logo após o nome */
+.filetree-mention-btn {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: 2px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out-expo),
+              background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+.filetree-item:hover .filetree-mention-btn,
+.filetree-mention-btn:focus-visible {
+  opacity: 0.7;
+}
+.filetree-mention-btn:hover {
+  background: var(--bg-active);
+  color: var(--accent);
+  opacity: 1 !important;
+}
+
+.filetree-loading,
+.filetree-empty {
+  padding: var(--space-1) var(--space-3) var(--space-1) 24px;
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+/* Reveal-in-tree: flash highlight quando user dispara "Revelar no FileTree".
+   A row scrolla pra centro e fica com fundo accent-tinted que esmaece em ~1.2s. */
+.filetree-item.is-revealed {
+  animation: filetreeReveal 1.2s var(--ease-out-expo);
+}
+@keyframes filetreeReveal {
+  0% { background: color-mix(in srgb, var(--accent) 40%, transparent); }
+  100% { background: transparent; }
+}
+
+/* OS file drop target — quando user arrasta arquivo do Explorer/Finder pra tree.
+   Outline tracejado interno + tinte accent suave indica "solte aqui pra abrir". */
+.filetree.is-drop-target {
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-panel));
+  outline: 2px dashed var(--accent);
+  outline-offset: -4px;
+}
+
+/* Drag-over em pasta interna — alvo de move dentro do tree.
+   Tinte accent dim na row, sinaliza que solta aqui faz move. */
+.filetree-item.is-drag-over {
+  background: color-mix(in srgb, var(--accent) 18%, var(--bg-elevated));
+  color: var(--fg-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+/* === Hover preview tooltip ===
+   Floating card que aparece após 600ms de hover em arquivo previewável.
+   Posicionado via inline style (x/y absolute na viewport). pointer-events none
+   pra não roubar mouse e causar mouseleave/re-enter flicker na row abaixo. */
+.filetree-hover-preview {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  background: var(--bg-elevated);
+  border: 1px solid color-mix(in srgb, var(--border-subtle) 80%, transparent);
+  border-radius: var(--radius-md, 6px);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 8px 24px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: filetreeHoverPreviewIn 120ms var(--ease-out-expo);
+}
+@keyframes filetreeHoverPreviewIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.filetree-hover-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--bg-panel) 60%, transparent);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.filetree-hover-preview-name {
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  color: var(--fg-primary);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.filetree-hover-preview-badge {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.filetree-hover-preview-body {
+  margin: 0;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--fg-secondary);
+  white-space: pre;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  /* Fade-out gradient nos últimos pixels pra sinalizar truncamento */
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent 100%);
+}
+.filetree-hover-preview-ellipsis {
+  color: var(--fg-muted);
+  font-weight: 600;
+  margin-left: 4px;
+}

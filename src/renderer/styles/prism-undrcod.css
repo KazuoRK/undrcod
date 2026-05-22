@@ -1,0 +1,240 @@
+/*
+ * Prism syntax highlighting — VS Code Dark+ palette (oficial)
+ * Cores exatas do tema padrão do VS Code que o mercado conhece.
+ *
+ * Source: https://github.com/microsoft/vscode/blob/main/extensions/theme-defaults/themes/dark_plus.json
+ */
+
+code[class*='language-'],
+pre[class*='language-'] {
+  color: #d4d4d4;
+  background: none;
+  font-family: Consolas, 'Courier New', monospace !important;
+  font-size: 14px;                     /* VS Code/Antigravity default exact */
+  font-weight: 400;
+  text-align: left;
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  word-wrap: normal;
+  line-height: 21px;                   /* VS Code auto = Math.round(14 * 1.5) */
+  tab-size: 4;                         /* VS Code default exact */
+  letter-spacing: 0;                   /* VS Code default exact */
+  hyphens: none;
+  font-variant-ligatures: none;
+  -webkit-font-smoothing: auto;
+}
+
+pre[class*='language-'] {
+  padding: var(--space-3) var(--space-4);
+  margin: 0;
+  overflow: auto;
+  background: var(--editor-canvas);
+}
+
+/* === Line numbers (VS Code Dark+ gutter) === */
+/* Cada linha é wrappada em <span class="line"> no wrapHighlightedLines.
+ * CSS counter renderiza o número via ::before. VS Code Dark+ NÃO tem linha
+ * vertical separando o gutter — só espaço. */
+
+pre.line-numbers {
+  padding-left: 0;
+}
+
+pre.line-numbers > code {
+  counter-reset: linenumber;
+  display: block;
+}
+
+.line {
+  counter-increment: linenumber;
+  display: block;
+  position: relative;
+  padding-left: 3.5em;
+}
+
+/* === Indent guides via DOM elements ===
+ * Cada <span class="indent-guide"> ocupa 4ch com border-left de 1px no INÍCIO.
+ * Border = 1px exato sempre (sem subpixel issues).
+ * Pra N níveis: N spans com borders em cols 0, 4, 8, ..., 4(N-1).
+ * Token: editorWhitespace.foreground = #e3e4e229 (16% alpha). */
+.indent-guide {
+  display: inline-block;
+  width: 4ch;
+  height: 21px;                        /* match line-height do pre */
+  box-sizing: border-box;
+  border-left: 1px solid #e3e4e229;
+  vertical-align: top;
+  pointer-events: none;
+  user-select: none;
+}
+
+.line::before {
+  content: counter(linenumber);
+  position: absolute;
+  left: 0;
+  width: 2.5em;
+  padding-right: 1em;
+  text-align: right;
+  color: #858585;                   /* VS Code line number gray */
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  pointer-events: none;
+}
+
+:not(pre) > code[class*='language-'] {
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--editor-canvas);
+  border: 1px solid var(--border-subtle);
+  color: #d4d4d4;
+}
+
+/* === VS Code Dark+ token palette === */
+
+/* Comments — green */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #6a9955;
+  font-style: italic;
+}
+
+/* Punctuation — default text */
+.token.punctuation {
+  color: #d4d4d4;
+}
+
+.token.namespace {
+  opacity: 0.85;
+}
+
+/* Strings, attr values, char — orange-red */
+.token.string,
+.token.attr-value,
+.token.char,
+.token.inserted {
+  color: #ce9178;
+}
+
+/* Numbers, booleans, constants — light green */
+.token.number,
+.token.boolean,
+.token.constant {
+  color: #b5cea8;
+}
+
+/* Keywords (control flow: if, return, throw...) — magenta */
+.token.keyword {
+  color: #c586c0;
+}
+
+/* Storage / type modifiers (const, let, function, var) — blue */
+.token.keyword.module,
+.token.keyword.control-flow,
+.token.atrule {
+  color: #c586c0;
+}
+
+/* Functions / methods — yellow-cream */
+.token.function,
+.token.function-variable {
+  color: #dcdcaa;
+}
+
+/* Classes, types — teal */
+.token.class-name,
+.token.maybe-class-name,
+.token.builtin {
+  color: #4ec9b0;
+}
+
+/* Variables / parameters — light blue */
+.token.variable,
+.token.parameter,
+.token.symbol {
+  color: #9cdcfe;
+}
+
+/* Operators — default */
+.token.operator,
+.token.entity {
+  color: #d4d4d4;
+}
+
+/* URLs — blue */
+.token.url {
+  color: #569cd6;
+}
+
+/* Selectors (CSS) — gold */
+.token.selector {
+  color: #d7ba7d;
+}
+
+/* Property (CSS, JSON keys) — light blue */
+.token.property {
+  color: #9cdcfe;
+}
+
+/* Tags HTML/XML — blue */
+.token.tag {
+  color: #569cd6;
+}
+
+/* Attribute names — light blue */
+.token.attr-name {
+  color: #9cdcfe;
+}
+
+/* Tag punctuation (<, >, /) — gray */
+.token.tag .token.punctuation {
+  color: #808080;
+}
+
+/* Tag attr-value strings stay orange (inherits .token.string) */
+
+/* Regex — red */
+.token.regex {
+  color: #d16969;
+}
+
+/* Important / deleted — coral red */
+.token.important,
+.token.deleted {
+  color: #f48771;
+  font-weight: 600;
+}
+
+.token.bold {
+  font-weight: 600;
+}
+.token.italic {
+  font-style: italic;
+}
+
+.token.entity {
+  cursor: help;
+}
+
+/* Markdown-specific */
+.language-markdown .token.title,
+.language-markdown .token.title .token.punctuation {
+  color: #569cd6;
+  font-weight: 600;
+}
+.language-markdown .token.code {
+  color: #ce9178;
+}
+.language-markdown .token.url-link,
+.language-markdown .token.url {
+  color: #569cd6;
+  text-decoration: underline;
+}
+.language-markdown .token.list .token.punctuation {
+  color: #c586c0;
+}
+.language-markdown .token.bold .token.content {
+  color: #d4d4d4;
+}

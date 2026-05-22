@@ -1,0 +1,253 @@
+/*
+ * OutlineSection — section inline na pane-left, abaixo do FileTree.
+ * Estética alinhada à FileTree: linhas densas (22px), border-top subtle,
+ * tipografia mono pra nomes de símbolo, cor/kind sutis.
+ */
+
+.outline-section {
+  flex-shrink: 0;
+  flex-grow: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Border igual TimelineSection — subtle 60% pra fundir suave. */
+  border-top: 1px solid color-mix(in srgb, var(--border-subtle) 60%, transparent);
+  background: var(--bg-panel);
+  /* Limita a 35% do container quando expandido; collapsed = header only. */
+  max-height: 35%;
+}
+
+.outline-section.is-collapsed {
+  max-height: none;
+  flex: 0 0 auto;
+}
+
+/* Header — alinhado com TimelineSection (padrão FileTree row).
+ * 22px height, padding 0 var(--space-3) (12px), font uppercase letter-spaced. */
+.outline-section-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 var(--space-3);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.outline-section-title-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  height: 22px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  transition: color var(--duration-fast) var(--ease-out-expo);
+}
+
+.outline-section-title-btn:hover {
+  color: var(--fg-secondary);
+}
+
+.outline-section-chevron {
+  font-size: 12px;
+  color: var(--fg-disabled);
+  flex-shrink: 0;
+}
+
+.outline-section-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.outline-section-count {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fg-disabled);
+  padding: 0 4px;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  min-width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.outline-section-action {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm, 4px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+  transition: background 80ms ease-out, color 80ms ease-out;
+}
+
+.outline-section-action .codicon {
+  font-size: 11px;
+}
+
+.outline-section-action:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.outline-section-action.is-active {
+  background: var(--bg-elevated);
+  color: var(--accent);
+}
+
+/* Filter input */
+.outline-section-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.outline-section-filter-icon {
+  font-size: 11px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.outline-section-filter-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm, 4px);
+  outline: none;
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: 11px;
+  padding: 2px 6px;
+  height: 20px;
+}
+
+.outline-section-filter-input:focus {
+  border-color: var(--accent, #E97B52);
+}
+
+.outline-section-filter-input::placeholder {
+  color: var(--fg-muted);
+}
+
+.outline-section-filter-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Body — lista de símbolos */
+.outline-section-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  max-height: 300px;
+  padding: 2px 0 4px;
+}
+
+.outline-section-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.outline-section-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0 8px 0 18px;
+  height: 22px;
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  transition: background 60ms ease-out, border-color 60ms ease-out;
+}
+
+.outline-section-item:hover,
+.outline-section-item:focus-visible {
+  background: var(--bg-elevated);
+  border-left-color: var(--accent, #E97B52);
+  outline: none;
+}
+
+.outline-section-item-icon {
+  font-size: 13px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.outline-section-item-icon.kind-function { color: #7AA2F7; }
+.outline-section-item-icon.kind-method { color: #BB9AF7; }
+.outline-section-item-icon.kind-class { color: #E0AF68; }
+.outline-section-item-icon.kind-interface { color: #2AC3DE; }
+.outline-section-item-icon.kind-type { color: #9ECE6A; }
+.outline-section-item-icon.kind-const { color: #F7768E; }
+
+.outline-section-item-name {
+  flex: 1;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  color: var(--fg-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outline-section-item-line {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+  min-width: 22px;
+  text-align: right;
+}
+
+/* Empty state inline */
+.outline-section-empty {
+  padding: 10px 12px 12px 18px;
+  font-size: 11px;
+  color: var(--fg-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Scrollbar minimal */
+.outline-section-body::-webkit-scrollbar {
+  width: 8px;
+}
+.outline-section-body::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 4px;
+}
+.outline-section-body::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-muted);
+}

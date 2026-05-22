@@ -1,0 +1,120 @@
+/*
+ * DevServerBanner — floating pill no top-right, discreto.
+ *
+ * Posicionado abaixo da topbar (que tem ~36px de altura), à direita,
+ * com z-index alto pra ficar acima de splitters/panes mas abaixo de
+ * modals (que ficam em 10000+).
+ */
+
+.dev-server-banner {
+  position: fixed;
+  top: 48px;                              /* abaixo da topbar + folga */
+  right: 16px;
+  z-index: 9000;                          /* abaixo de toast (9999) e modals */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 8px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg, 8px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  color: var(--fg-primary);
+  min-width: 240px;
+  max-width: min(360px, calc(100vw - 32px));
+  animation: devServerBannerSlideIn var(--duration-base, 220ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+@keyframes devServerBannerSlideIn {
+  from {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.dev-server-banner-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-md, 6px);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.dev-server-banner-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.dev-server-banner-title {
+  font-size: var(--text-sm, 13px);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--fg-primary);
+}
+
+.dev-server-banner-sub {
+  margin-top: 1px;
+  font-size: var(--text-xs, 11px);
+  color: var(--fg-muted);
+  font-family: var(--font-mono, monospace);
+}
+
+.dev-server-banner-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dev-server-banner-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  min-width: 26px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md, 6px);
+  color: var(--fg-primary);
+  font: inherit;
+  font-size: var(--text-xs, 12px);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--duration-fast, 120ms) ease,
+              border-color var(--duration-fast, 120ms) ease,
+              transform var(--duration-fast, 120ms) ease;
+}
+
+.dev-server-banner-btn:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+  border-color: var(--border-strong, var(--border-subtle));
+}
+
+.dev-server-banner-btn:active {
+  transform: scale(0.97);
+}
+
+.dev-server-banner-btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg, #fff);
+}
+
+.dev-server-banner-btn--primary:hover {
+  background: color-mix(in srgb, var(--accent) 88%, white);
+  border-color: color-mix(in srgb, var(--accent) 88%, white);
+}
+
+.dev-server-banner-btn .codicon {
+  font-size: 12px;
+}

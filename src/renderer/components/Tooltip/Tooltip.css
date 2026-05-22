@@ -1,0 +1,95 @@
+/* Custom tooltip (.undrcod-tooltip) — replaces native title="..." */
+
+.undrcod-tooltip {
+  /* Surface */
+  background: var(--bg-elevated);
+  color: var(--fg-default);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px 10px;
+
+  /* Typography */
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0;
+  white-space: nowrap;
+
+  /* Layout */
+  max-width: 280px;
+  pointer-events: none;
+  user-select: none;
+
+  /* Depth */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.32);
+
+  /* Animation */
+  animation: undrcod-tooltip-fade 120ms ease-out;
+}
+
+/* Allow multi-line tooltips when content is long */
+.undrcod-tooltip:has(br),
+.undrcod-tooltip:has(span[data-multiline]) {
+  white-space: normal;
+}
+
+/* Small arrow (purely cosmetic — points back at the trigger) */
+.undrcod-tooltip::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-right: none;
+  border-bottom: none;
+  transform: rotate(45deg);
+}
+.undrcod-tooltip--bottom::after {
+  top: -5px;
+  left: 50%;
+  margin-left: -4px;
+}
+.undrcod-tooltip--top::after {
+  bottom: -5px;
+  left: 50%;
+  margin-left: -4px;
+  transform: rotate(225deg);
+}
+.undrcod-tooltip--right::after {
+  left: -5px;
+  top: 50%;
+  margin-top: -4px;
+  transform: rotate(-45deg);
+}
+.undrcod-tooltip--left::after {
+  right: -5px;
+  top: 50%;
+  margin-top: -4px;
+  transform: rotate(135deg);
+}
+
+/* Subtle kbd inside tooltip (e.g. "Add layer  ⌘K") */
+.undrcod-tooltip kbd {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 1px 5px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  color: var(--fg-muted);
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+@keyframes undrcod-tooltip-fade {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .undrcod-tooltip { animation: none; }
+}

@@ -1,0 +1,214 @@
+/*
+ * Palette — modal centered no topo do viewport, estilo Ctrl+P / Cmd-K.
+ * Alinhado ao design system (mesmos tokens do ContextMenu / ComposerPopover).
+ */
+
+.palette-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1100;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 14vh;
+  backdrop-filter: blur(2px);
+  animation: paletteOverlayFadeIn var(--duration-fast) var(--ease-out-expo);
+}
+
+.palette-modal {
+  width: min(640px, 90vw);
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 16px 56px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  font-family: var(--font-body);
+  color: var(--fg-primary);
+  animation: paletteModalRise var(--duration-base) var(--ease-out-expo);
+}
+
+@keyframes paletteOverlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes paletteModalRise {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.palette-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  flex: 0 0 auto;
+}
+
+.palette-input-icon {
+  color: var(--fg-muted);
+  font-size: var(--text-md);
+}
+
+.palette-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--fg-primary);
+  font-size: var(--text-md);
+  padding: var(--space-3) 0;
+  font-family: inherit;
+}
+
+.palette-input::placeholder {
+  color: var(--fg-muted);
+  opacity: 0.7;
+}
+
+.palette-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-1) 0;
+  min-height: 0;
+}
+
+.palette-section-header {
+  padding: var(--space-2) var(--space-4) var(--space-1);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.palette-section-header .codicon { font-size: 11px; }
+
+.palette-empty {
+  padding: 28px var(--space-4);
+  text-align: center;
+  color: var(--fg-muted);
+  font-size: var(--text-base);
+}
+
+.palette-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 7px var(--space-4);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--fg-primary);
+  text-align: left;
+  font-family: inherit;
+  font-size: var(--text-md);
+  font-weight: 500;
+  line-height: 1.4;
+  transition: background var(--duration-instant) var(--ease-out-expo),
+              color var(--duration-instant) var(--ease-out-expo);
+}
+
+.palette-item.is-focused {
+  background: var(--bg-active);
+}
+
+.palette-row-icon {
+  color: var(--fg-muted);
+  font-size: var(--text-md);
+  flex: 0 0 auto;
+}
+
+.palette-item.is-focused .palette-row-icon {
+  color: var(--accent-500);
+}
+
+.palette-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.palette-row-title {
+  font-size: var(--text-base);
+  color: var(--fg-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-row-desc {
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-row-shortcut {
+  display: flex;
+  gap: var(--space-1);
+  flex: 0 0 auto;
+}
+
+.palette-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+.palette-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.palette-count {
+  color: var(--fg-muted);
+}
+
+/* === Grep mode === */
+.palette-grep-snippet {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  overflow: hidden;
+}
+.palette-grep-line {
+  color: var(--accent-500);
+  flex: 0 0 auto;
+  opacity: 0.7;
+  min-width: 28px;
+}
+.palette-grep-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.palette-grep-match {
+  background: var(--accent-soft);
+  color: var(--accent-500);
+  padding: 0 2px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}

@@ -1,0 +1,298 @@
+/*
+ * CheckpointPanel — modal pra revisar/reverter/deletar snapshots do workspace.
+ * Reusa o mesmo design system de HistoryPanel/SettingsModal: backdrop translúcido,
+ * card com radius-2xl, header + body + footer.
+ */
+
+.checkpoint-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  animation: checkpointBackdropIn var(--duration-fast, 120ms) var(--ease-out-expo, ease-out);
+}
+
+@keyframes checkpointBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.checkpoint-modal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl, 14px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  width: min(640px, 100%);
+  height: min(720px, 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: checkpointModalIn var(--duration-base, 180ms) var(--ease-out-expo, ease-out);
+}
+
+@keyframes checkpointModalIn {
+  from { opacity: 0; transform: translateY(-12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Header */
+.checkpoint-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.checkpoint-header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.checkpoint-header-icon {
+  color: var(--accent, #E97B52);
+  font-size: 16px;
+}
+
+.checkpoint-title {
+  font-family: var(--font-body);
+  font-size: var(--text-base, 14px);
+  color: var(--fg-primary);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.checkpoint-cwd {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-xs, 11px);
+  color: var(--fg-muted);
+  padding: 2px 8px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm, 4px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+.checkpoint-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md, 6px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+  flex-shrink: 0;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.checkpoint-close:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+/* Body — lista scrollável */
+.checkpoint-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.checkpoint-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.checkpoint-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 18px;
+  border-left: 2px solid transparent;
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  transition: background 120ms ease-out, border-color 120ms ease-out;
+}
+.checkpoint-item:hover {
+  background: var(--bg-elevated);
+  border-left-color: var(--accent, #E97B52);
+}
+
+.checkpoint-item-icon {
+  color: var(--accent, #E97B52);
+  font-size: 16px;
+  flex-shrink: 0;
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.85;
+}
+
+.checkpoint-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checkpoint-item-title {
+  font-size: var(--text-sm, 13px);
+  color: var(--fg-primary);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkpoint-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--text-xs, 11px);
+  color: var(--fg-muted);
+}
+
+.checkpoint-item-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.checkpoint-item-time .codicon {
+  font-size: 11px;
+}
+
+.checkpoint-item-files {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.checkpoint-item-files .codicon {
+  font-size: 11px;
+}
+
+.checkpoint-item-id {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-xs, 10px);
+  color: var(--fg-muted);
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.checkpoint-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Buttons */
+.checkpoint-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md, 6px);
+  padding: 6px 12px;
+  cursor: pointer;
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm, 13px);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 120ms ease-out, border-color 120ms ease-out, color 120ms ease-out;
+}
+.checkpoint-btn:hover:not(:disabled) {
+  background: var(--bg-panel);
+  border-color: var(--accent, #E97B52);
+}
+.checkpoint-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.checkpoint-btn-primary {
+  /* destacado mas neutro — destrutivo de verdade é o confirmDialog. */
+  color: var(--fg-primary);
+}
+.checkpoint-btn-primary:hover:not(:disabled) {
+  color: var(--accent, #E97B52);
+  border-color: var(--accent, #E97B52);
+}
+
+.checkpoint-btn-icon {
+  padding: 6px 8px;
+}
+.checkpoint-btn-icon:hover:not(:disabled) {
+  color: #e06464;
+  border-color: #e06464;
+}
+
+/* Empty state */
+.checkpoint-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--fg-muted);
+  font-size: var(--text-sm, 13px);
+}
+
+.checkpoint-empty-icon {
+  font-size: 32px;
+  color: var(--fg-muted);
+  opacity: 0.5;
+  margin-bottom: 4px;
+}
+
+.checkpoint-empty-title {
+  font-size: var(--text-base, 14px);
+  color: var(--fg-primary);
+  font-weight: 500;
+}
+
+.checkpoint-empty-hint {
+  font-size: var(--text-xs, 12px);
+  color: var(--fg-muted);
+  max-width: 420px;
+  line-height: 1.5;
+}
+
+/* Footer */
+.checkpoint-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  background: var(--bg-base);
+}
+
+.checkpoint-footer-hint {
+  font-size: var(--text-xs, 11px);
+  color: var(--fg-muted);
+}

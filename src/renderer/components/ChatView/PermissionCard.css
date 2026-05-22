@@ -1,0 +1,468 @@
+/* PermissionCard — gate de aprovação inline.
+ *
+ * Treat each card as a *system call signature* awaiting a sign-off.
+ * Strong horizontal layout (header → target → actions), com 3 risk classes
+ * que mudam SÓ tom de borda+glyph (sem teatro visual). Distintivo:
+ *
+ *  • Glyph tile com gradient accent + ring + "wake" pulse de chegada
+ *  • Function-call typography: `Bash()` em mono, verb em sans muted
+ *  • Target block com prefixo glyph-leading ($ / › / ↗ / ?)
+ *  • Kbd hint flutuante top-right (sempre visível, não escondido no botão)
+ *  • Primary action right-anchored com arrow → indicando "atravessar"
+ *  • Risk class high (Bash/Write/Edit) ganha border orange tint sutil
+ *  • Mount com lift + accent wake (border highlight settle ~600ms)
+ *
+ * Tokens: --accent, --bg-*, --fg-*, --border-*, --orange-400, --green-500,
+ *         --red-500, --radius-*, --font-mono, --duration-*, --ease-out-expo.
+ */
+
+.perm-card {
+  --perm-tone: var(--accent);
+  --perm-tone-soft: color-mix(in oklab, var(--accent) 16%, transparent);
+  --perm-tone-ring: color-mix(in oklab, var(--accent) 32%, transparent);
+
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  margin: 6px 0;
+  border-radius: var(--radius-xl, 10px);
+
+  /* Surface levemente acima do canvas — não compete com bubbles, mas existe. */
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--perm-tone) 3.5%, var(--bg-card)) 0%,
+      var(--bg-card) 60%
+    );
+  border: 1px solid var(--border-subtle);
+  font-family: var(--font-body);
+  color: var(--fg-primary);
+
+  /* Mount: rise + wake. Border vira tone-ring por 600ms then settles. */
+  animation: perm-card-mount 320ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both,
+             perm-card-wake 700ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) 80ms both;
+
+  transition:
+    opacity var(--duration-base, 180ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)),
+    border-color var(--duration-fast, 140ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+@keyframes perm-card-mount {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes perm-card-wake {
+  /* Borda "acorda" no tom da risk class por ~500ms, depois assenta. */
+  0%   { border-color: var(--perm-tone-ring); box-shadow: 0 0 0 1px var(--perm-tone-soft), 0 6px 24px -8px var(--perm-tone-soft); }
+  70%  { border-color: var(--perm-tone-ring); box-shadow: 0 0 0 1px var(--perm-tone-soft), 0 6px 24px -8px var(--perm-tone-soft); }
+  100% { border-color: var(--border-subtle); box-shadow: 0 0 0 1px transparent, 0 4px 16px -10px transparent; }
+}
+
+/* ===== Risk classes — só ajustam o tom (border + glyph). ============== */
+.perm-card[data-risk='high'] {
+  --perm-tone: var(--orange-400, #e8975f);
+  --perm-tone-soft: color-mix(in oklab, var(--orange-400, #e8975f) 14%, transparent);
+  --perm-tone-ring: color-mix(in oklab, var(--orange-400, #e8975f) 36%, transparent);
+}
+.perm-card[data-risk='mid'] {
+  --perm-tone: var(--accent);
+  --perm-tone-soft: color-mix(in oklab, var(--accent) 16%, transparent);
+  --perm-tone-ring: color-mix(in oklab, var(--accent) 36%, transparent);
+}
+.perm-card[data-risk='low'] {
+  --perm-tone: var(--accent);
+  --perm-tone-soft: color-mix(in oklab, var(--accent) 10%, transparent);
+  --perm-tone-ring: color-mix(in oklab, var(--accent) 22%, transparent);
+}
+
+/* Decision states — card "consumido", fade discreto mas legível. */
+.perm-card[data-state='allow'],
+.perm-card[data-state='always'],
+.perm-card[data-state='deny'] {
+  opacity: 0.55;
+  animation: perm-card-mount 320ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+.perm-card[data-state='allow']   { border-color: color-mix(in oklab, var(--green-500, #63984f) 30%, var(--border-subtle)); }
+.perm-card[data-state='always']  { border-color: color-mix(in oklab, var(--green-500, #63984f) 38%, var(--border-subtle)); }
+.perm-card[data-state='deny']    { border-color: color-mix(in oklab, var(--red-500,   #de5555) 32%, var(--border-subtle)); }
+
+/* =====================================================================
+ * Header: glyph + titleblock + kbd hint
+ * ===================================================================== */
+
+.perm-card-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Glyph tile — 36x36, gradient da risk tone, ring ao redor + pulse no mount. */
+.perm-card-glyph {
+  position: relative;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md, 6px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--perm-tone);
+  background:
+    linear-gradient(135deg,
+      color-mix(in oklab, var(--perm-tone) 28%, var(--bg-elevated)) 0%,
+      color-mix(in oklab, var(--perm-tone) 12%, var(--bg-elevated)) 100%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--perm-tone) 22%, transparent),
+    inset 0 1px 0 color-mix(in oklab, white 6%, transparent);
+}
+
+.perm-card-glyph .codicon {
+  font-size: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Pulse — anel sutil que expande UMA vez no mount, sem loop. */
+.perm-card-glyph-pulse {
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 1px solid var(--perm-tone-ring);
+  opacity: 0;
+  pointer-events: none;
+  animation: perm-glyph-pulse 900ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) 120ms 1 both;
+}
+
+@keyframes perm-glyph-pulse {
+  0%   { transform: scale(0.92); opacity: 0; }
+  30%  { opacity: 0.8; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+
+/* Estados pós-decisão — pulse some, glyph troca tom. */
+.perm-card[data-state='allow']   .perm-card-glyph,
+.perm-card[data-state='always']  .perm-card-glyph {
+  color: var(--green-500, #63984f);
+  background:
+    linear-gradient(135deg,
+      color-mix(in oklab, var(--green-500, #63984f) 24%, var(--bg-elevated)) 0%,
+      color-mix(in oklab, var(--green-500, #63984f) 10%, var(--bg-elevated)) 100%);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--green-500, #63984f) 22%, transparent);
+}
+.perm-card[data-state='deny'] .perm-card-glyph {
+  color: var(--red-500, #de5555);
+  background:
+    linear-gradient(135deg,
+      color-mix(in oklab, var(--red-500, #de5555) 22%, var(--bg-elevated)) 0%,
+      color-mix(in oklab, var(--red-500, #de5555) 8%, var(--bg-elevated)) 100%);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--red-500, #de5555) 22%, transparent);
+}
+.perm-card:not([data-state='pending']) .perm-card-glyph-pulse {
+  display: none;
+}
+
+/* Titleblock: call signature + sub */
+.perm-card-titleblock {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.perm-card-call {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.perm-card-tool {
+  font-weight: 600;
+  color: var(--fg-primary);
+}
+
+.perm-card-paren {
+  font-weight: 500;
+  color: color-mix(in oklab, var(--perm-tone) 75%, var(--fg-muted));
+  letter-spacing: 0;
+}
+
+.perm-card-sep {
+  font-family: var(--font-body);
+  font-weight: 500;
+  color: var(--fg-muted);
+  margin: 0 2px;
+}
+
+.perm-card-verb {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg-secondary);
+  letter-spacing: 0;
+}
+
+.perm-card-sub {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--fg-muted);
+  letter-spacing: 0.005em;
+}
+
+/* Kbd hint — top-right, sempre visível, ensina o atalho ANTES do clique. */
+.perm-card-kbd {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 2px;
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  align-self: flex-start;
+  flex-shrink: 0;
+  margin-top: 1px;
+  /* Fade-in atrasado pra ler como "ah, e tem atalho" depois do título. */
+  animation: perm-kbd-in 320ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) 280ms both;
+}
+.perm-card-kbd kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--fg-secondary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-bottom-width: 1.5px;
+  border-radius: 3px;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+@keyframes perm-kbd-in {
+  from { opacity: 0; transform: translateX(4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Quando já decidido, kbd somem (não fazem mais sentido). */
+.perm-card:not([data-state='pending']) .perm-card-kbd {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* =====================================================================
+ * Target block — argumento real do call (path, command, URL...)
+ * ===================================================================== */
+
+.perm-card-target {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  padding: 9px 12px;
+  background: color-mix(in oklab, var(--bg-base) 60%, var(--bg-card));
+  border: 1px solid color-mix(in oklab, var(--border-subtle) 70%, transparent);
+  border-radius: var(--radius-md, 6px);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fg-secondary);
+  max-height: 110px;
+  overflow-y: auto;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  letter-spacing: -0.005em;
+}
+
+.perm-card-target-prefix {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 14px;
+  color: var(--perm-tone);
+  font-weight: 600;
+  user-select: none;
+  padding-top: 1px;
+}
+
+.perm-card-target-body {
+  min-width: 0;
+  color: var(--fg-primary);
+  /* Make the long line readable mesmo com break-all. */
+  white-space: pre-wrap;
+}
+
+/* Scrollbar fina dentro do target — não rouba ar do card. */
+.perm-card-target::-webkit-scrollbar {
+  width: 8px;
+}
+.perm-card-target::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.perm-card-target::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* =====================================================================
+ * Actions — horizontal, deny ⟵ spacer ⟵ always | primary
+ * ===================================================================== */
+
+.perm-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.perm-card-actions-spacer {
+  flex: 1;
+}
+
+.perm-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-md, 6px);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg-secondary);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0;
+  transition:
+    background var(--duration-fast, 140ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)),
+    border-color var(--duration-fast, 140ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)),
+    color var(--duration-fast, 140ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)),
+    transform var(--duration-fast, 140ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.perm-action:disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Negar — ghost que vira vermelho subtle no hover; sem peso visual no idle. */
+.perm-action-deny {
+  color: var(--fg-muted);
+  border-color: color-mix(in oklab, var(--border-subtle) 60%, transparent);
+}
+.perm-action-deny:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--red-500, #de5555) 10%, transparent);
+  border-color: color-mix(in oklab, var(--red-500, #de5555) 36%, transparent);
+  color: var(--red-500, #de5555);
+}
+
+/* Sempre <Tool> — ghost neutro, hover sutil. */
+.perm-action-always:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--fg-primary) 5%, transparent);
+  border-color: var(--border-strong, var(--border-subtle));
+  color: var(--fg-primary);
+}
+
+/* Primary — accent fill no tom da risk class. É a "porta". */
+.perm-action-primary {
+  background: var(--perm-tone);
+  border-color: var(--perm-tone);
+  color: var(--bg-base);
+  font-weight: 600;
+  padding: 0 14px;
+  /* Glow sutil pra deixar claro que esse é o caminho default — sem ser kitsch. */
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--perm-tone) 28%, transparent),
+    0 4px 14px -6px color-mix(in oklab, var(--perm-tone) 70%, transparent);
+}
+.perm-action-primary:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--perm-tone) 88%, white);
+  border-color: color-mix(in oklab, var(--perm-tone) 88%, white);
+  transform: translateY(-0.5px);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--perm-tone) 40%, transparent),
+    0 6px 18px -6px color-mix(in oklab, var(--perm-tone) 80%, transparent);
+}
+.perm-action-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.perm-action-arrow {
+  font-size: 13px;
+  margin-left: 2px;
+  transition: transform var(--duration-fast, 140ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+}
+.perm-action-primary:hover:not(:disabled) .perm-action-arrow {
+  transform: translateX(2px);
+}
+
+.perm-action:focus-visible {
+  outline: 2px solid var(--perm-tone);
+  outline-offset: 2px;
+}
+
+/* =====================================================================
+ * Compact / narrow chat — actions wrap quando o pane fica apertado.
+ * ===================================================================== */
+
+@container (max-width: 380px) {
+  .perm-card-actions {
+    flex-wrap: wrap;
+  }
+  .perm-card-actions-spacer {
+    display: none;
+  }
+  .perm-action-primary {
+    margin-left: auto;
+  }
+}
+
+/* Fallback sem container queries — quando o card é forçado <420px via flex. */
+@media (max-width: 520px) {
+  .perm-card-actions {
+    flex-wrap: wrap;
+  }
+  .perm-card-actions-spacer {
+    flex-basis: 100%;
+    height: 0;
+  }
+}
+
+/* =====================================================================
+ * Reduced motion — corta wake / pulse / kbd-fade / arrow-slide.
+ * ===================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .perm-card,
+  .perm-card-kbd,
+  .perm-card-glyph-pulse {
+    animation: none !important;
+  }
+  .perm-action,
+  .perm-action-arrow {
+    transition: none !important;
+  }
+  .perm-action-primary:hover:not(:disabled) {
+    transform: none;
+  }
+}

@@ -1,0 +1,382 @@
+/*
+ * RightPane — painel lateral direito com tabs Antigravity-style.
+ */
+
+.right-pane {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border-subtle);
+  min-height: 0;
+}
+
+/* Tabbar — header com tabs fechábeis */
+.right-pane-tabbar {
+  display: flex;
+  align-items: stretch;
+  height: 36px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  flex-shrink: 0;
+}
+
+.right-pane-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 12px;
+  cursor: pointer;
+  border-right: 1px solid var(--border-subtle);
+  color: var(--fg-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  min-width: 0;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.right-pane-tab:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-secondary);
+}
+
+.right-pane-tab.is-active {
+  background: var(--bg-panel);
+  color: var(--fg-primary);
+  border-bottom: 1px solid var(--accent);
+  margin-bottom: -1px;
+}
+
+.right-pane-tab-icon {
+  font-size: 14px;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.right-pane-tab-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.right-pane-tab-close {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out-expo),
+              background var(--duration-fast) var(--ease-out-expo);
+}
+
+.right-pane-tab:hover .right-pane-tab-close,
+.right-pane-tab.is-active .right-pane-tab-close {
+  opacity: 1;
+}
+
+.right-pane-tab-close:hover {
+  background: var(--bg-active);
+  color: var(--fg-primary);
+}
+
+.right-pane-tab-close .codicon {
+  font-size: 12px;
+}
+
+.right-pane-tabbar-spacer {
+  flex: 1;
+}
+
+.right-pane-pane-close {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  width: 32px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.right-pane-pane-close:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.right-pane-pane-close .codicon {
+  font-size: 14px;
+}
+
+/* Content area — uma tab por vez */
+.right-pane-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.right-pane-tab-body {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--fg-secondary);
+}
+
+/* Search input (tab Arquivos) */
+.right-pane-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  color: var(--fg-muted);
+}
+
+.right-pane-search .codicon {
+  font-size: 13px;
+}
+
+.right-pane-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  min-width: 0;
+}
+
+.right-pane-search-input::placeholder {
+  color: var(--fg-muted);
+}
+
+/* Lists */
+.right-pane-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.right-pane-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--fg-secondary);
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              color var(--duration-fast) var(--ease-out-expo);
+}
+
+.right-pane-list-item:hover {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.right-pane-list-item .codicon {
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+
+.right-pane-list-item.is-current {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+.right-pane-list-badge {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--accent);
+  padding: 1px 6px;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Section title (Tarefas: "Concluído") */
+.right-pane-section-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  padding: 0 4px;
+}
+
+/* Task item */
+.right-pane-task {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.right-pane-task:hover {
+  background: var(--bg-active);
+  border-color: var(--border-strong);
+}
+
+.right-pane-task-status {
+  font-size: 14px;
+  color: var(--green, #7aae66);
+  flex-shrink: 0;
+}
+
+.right-pane-task-status.is-error {
+  color: var(--red, #e53935);
+}
+
+.right-pane-task-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.right-pane-task-title {
+  color: var(--fg-primary);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.right-pane-task-meta {
+  color: var(--fg-muted);
+  font-size: var(--text-2xs);
+  font-family: var(--font-mono);
+}
+
+.right-pane-task-chevron {
+  color: var(--fg-muted);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* Terminal display (legado — log de tool calls do Claude) */
+.right-pane-terminal {
+  background: var(--editor-canvas);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+}
+
+/* Host do TerminalView (xterm.js) — preenche tab body completo, sem padding */
+.right-pane-terminal-host {
+  padding: 0;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.right-pane-terminal-output {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-secondary);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.terminal-prompt {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.terminal-command {
+  color: var(--fg-primary);
+}
+
+.terminal-error {
+  color: var(--red, #e53935);
+}
+
+.terminal-caret {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: var(--fg-primary);
+  vertical-align: text-bottom;
+  margin-left: 4px;
+  animation: terminalCaretBlink 1s steps(2) infinite;
+}
+
+@keyframes terminalCaretBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Empty state */
+.right-pane-empty {
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  text-align: center;
+  padding: var(--space-5);
+  color: var(--fg-muted);
+}
+
+.right-pane-empty-icon {
+  font-size: 32px;
+  margin-bottom: var(--space-3);
+  opacity: 0.4;
+}
+
+.right-pane-empty-title {
+  color: var(--fg-primary);
+  font-size: var(--text-base);
+  font-weight: 500;
+  margin-bottom: var(--space-2);
+}
+
+.right-pane-empty-hint {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  max-width: 260px;
+}
+
+.right-pane-empty-btn {
+  margin-top: var(--space-3);
+  padding: 6px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out-expo),
+              border-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.right-pane-empty-btn:hover {
+  background: var(--bg-active);
+  border-color: var(--border-strong);
+}
