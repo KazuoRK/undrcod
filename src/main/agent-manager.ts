@@ -408,23 +408,23 @@ class AgentManager {
       effortFlag.push('--effort', effort);
     }
 
-    // Language flag: append-system-prompt forçando idioma quando aplicável.
-    //   'auto': aplica force-pt-BR só se o prompt parece pt-BR (heurística).
-    //           Pra prompts em inglês → nada (Claude responde inglês default).
-    //   'pt-BR': aplica sempre.
-    //   'en': aplica sempre.
-    // Append (não substitui) o system existente do CLI — não interfere com plugins.
+    // Language section — concatenamos no UNDRCOD prompt em vez de outro
+    // --append-system-prompt separado. Bug detectado: Claude CLI 2.1.143 usa
+    // SÓ o ÚLTIMO `--append-system-prompt` quando há múltiplos (override
+    // pattern padrão CLI). Antes a gente passava 2 (UNDRCOD + language),
+    // language ganhava e o contexto UNDRCOD ia pro lixo silencioso.
     const PT_BR_PROMPT = 'Responda sempre em português brasileiro, com gramática e acentuação corretas. Use inglês apenas para termos técnicos consagrados (nomes de bibliotecas, comandos, APIs).';
     const EN_PROMPT = 'Always respond in English regardless of the user prompt language.';
-    const languageFlag: string[] = [];
+    let languageSection = '';
     const lang = preferredLanguage ?? 'auto';
     if (lang === 'pt-BR') {
-      languageFlag.push('--append-system-prompt', PT_BR_PROMPT);
+      languageSection = '\n\n---\n\n' + PT_BR_PROMPT;
     } else if (lang === 'en') {
-      languageFlag.push('--append-system-prompt', EN_PROMPT);
+      languageSection = '\n\n---\n\n' + EN_PROMPT;
     } else if (lang === 'auto' && looksLikePtBr(prompt)) {
-      languageFlag.push('--append-system-prompt', PT_BR_PROMPT);
+      languageSection = '\n\n---\n\n' + PT_BR_PROMPT;
     }
+    const combinedSystemPrompt = UNDRCOD_SYSTEM_PROMPT + languageSection;
 
     // HÍBRIDO ARGV / STDIN — espelha pattern do Cursor.
     //
@@ -452,13 +452,12 @@ class AgentManager {
       'stream-json',
       '--verbose',
       '--include-partial-messages',
-      // Injeta contexto do UNDRCOD em TODO spawn — agent sempre sabe que tá
-      // rodando dentro da IDE, conhece features que só existem via UI
-      // (CSS Inspector, PermissionCard, NEP, etc) e respeita convenções
-      // do codebase. Conteúdo em src/main/undrcode-system-prompt.ts.
+      // Injeta contexto do UNDRCOD + language preference em UM ÚNICO
+      // `--append-system-prompt`. Claude CLI 2.1.143 usa só o último quando
+      // há múltiplos — concatenar evita override silencioso. Conteúdo do
+      // prompt UNDRCOD vive em src/main/undrcode-system-prompt.ts.
       '--append-system-prompt',
-      UNDRCOD_SYSTEM_PROMPT,
-      ...languageFlag,
+      combinedSystemPrompt,
       ...modeFlag,
       ...permFlags,
       ...modelFlag,
